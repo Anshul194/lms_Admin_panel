@@ -111,7 +111,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <Tag />,
-    name: "coupons",
+    name: "Coupons",
     path: "/coupons/all"
   },
   {
