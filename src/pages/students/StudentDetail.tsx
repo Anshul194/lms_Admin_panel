@@ -8,6 +8,7 @@ import {
   unbanStudent,
   disableDripForModule,
   deleteEnrollment,
+  updateAccessExpiry,
 } from "../../store/slices/students";
 import { fetchCourseById } from "../../store/slices/course";
 import {
@@ -38,6 +39,8 @@ import {
   Ban,
   ShieldCheck,
   Building2,
+  Save,
+  X,
 } from "lucide-react";
 import EnrollStudentPopup from "../../components/students/EnrollStudentPopup";
 import StudentAnalyticsTab from "./StudentAnalyticsTab";
@@ -78,6 +81,10 @@ function StudentDetail() {
       name?: string;
       Doc?: string;
     }>;
+    company?: {
+      name?: string;
+      gstNumber?: string;
+    };
     // Add any other fields you use from 'data'
   };
 
@@ -120,6 +127,11 @@ function StudentDetail() {
   // Enrollment removal state
   const [removingEnrollmentId, setRemovingEnrollmentId] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<{ id: string; title: string } | null>(null);
+
+  // Access Expiry Edit state
+  const [editingEnrollmentId, setEditingEnrollmentId] = useState<string | null>(null);
+  const [newExpiryDate, setNewExpiryDate] = useState<string>("");
+  const [updatingExpiry, setUpdatingExpiry] = useState(false);
 
   useEffect(() => {
     // Auto-hide toast after 2.5s
@@ -263,11 +275,40 @@ function StudentDetail() {
         ...prev,
         enrollments: prev.enrollments.filter((enr: any) => enr._id !== enrollmentId),
       }));
-    } catch (e) {
-      setToast({ message: "Failed to remove enrollment.", type: "error" });
+    } catch (e: any) {
+      setToast({ message: e || "Failed to remove enrollment.", type: "error" });
     } finally {
       setRemovingEnrollmentId(null);
       setConfirmRemove(null);
+    }
+  };
+
+  // Update Access Expiry handler
+  const handleUpdateExpiry = async (enrollmentId: string) => {
+    if (!newExpiryDate) {
+      setToast({ message: "Please select a valid date.", type: "error" });
+      return;
+    }
+
+    setUpdatingExpiry(true);
+    try {
+      await dispatch(updateAccessExpiry({ enrollmentId, accessExpiry: newExpiryDate })).unwrap();
+      setToast({ message: "Access expiry updated successfully.", type: "success" });
+
+      // Update local state
+      setData((prev: any) => ({
+        ...prev,
+        enrollments: prev.enrollments.map((enr: any) =>
+          enr._id === enrollmentId
+            ? { ...enr, accessExpiry: newExpiryDate }
+            : enr
+        ),
+      }));
+      setEditingEnrollmentId(null);
+    } catch (e: any) {
+      setToast({ message: e || "Failed to update access expiry.", type: "error" });
+    } finally {
+      setUpdatingExpiry(false);
     }
   };
 
@@ -325,11 +366,10 @@ function StudentDetail() {
 
   const StatusBadge = ({ verified, label, icon: Icon }) => (
     <div
-      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-        verified
-          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-          : "bg-rose-100 text-rose-800 border border-rose-200"
-      }`}
+      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${verified
+        ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+        : "bg-rose-100 text-rose-800 border border-rose-200"
+        }`}
     >
       {Icon && <Icon className="w-3 h-3 mr-1.5" />}
       {label}
@@ -461,11 +501,10 @@ function StudentDetail() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${
-                  activeTab === tab.id
-                    ? "text-blue-600 border-blue-600"
-                    : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
-                }`}
+                className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors duration-200 ${activeTab === tab.id
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300"
+                  }`}
               >
                 <tab.icon className="w-4 h-4 mr-2" />
                 {tab.label}
@@ -513,7 +552,7 @@ function StudentDetail() {
 
             {/* Company Information Box (dynamic) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              
+
               {/* Recent Activity */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex sm:items-center justify-between flex-col items-start sm:flex-row gap-4 mb-6">
@@ -521,30 +560,30 @@ function StudentDetail() {
                     <Activity className="mr-2 h-5 w-5 text-blue-500" />
                     Recent Activity
                   </h3>
-                
+
                 </div>
                 <div className="space-y-4">
                   {Array.isArray(data?.enrollments) && data.enrollments.length > 0 && Object.keys(data.enrollments[0]).length > 0 ? (
-                  data.enrollments.slice(0, 3).map((enrollment, index) => (
-                    <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                      {enrollment.course?.title || "Untitled Course"}
-                      </p>
-                    </div>
-                    </div>
-                  ))
+                    data.enrollments.slice(0, 3).map((enrollment, index) => (
+                      <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {enrollment.course?.title || "Untitled Course"}
+                          </p>
+                        </div>
+                      </div>
+                    ))
                   ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    No enrollments found.
-                  </div>
+                    <div className="text-center text-gray-500 py-8">
+                      No enrollments found.
+                    </div>
                   )}
                 </div>
               </div>
-               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
                   <User className="mr-2 h-5 w-5 text-green-500" />
                   Contact Information
@@ -578,56 +617,56 @@ function StudentDetail() {
             {/* Quick Overview Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Contact & Account Info */}
-             
 
-                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-      <h3 className="text-xl font-semibold text-gray-900 flex items-center mb-6">
-        <Users className="mr-3 h-6 w-6 text-indigo-600" />
-        Company Information
-      </h3>
-      
-      <div className="space-y-4">
-        {/* Company Name */}
-        <div className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-          <Building2 className="mr-3 h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <span className="font-medium text-gray-700 block text-sm mb-1">
-              Company Name
-            </span>
-            <span className="text-gray-900 font-semibold">
-              {data.company?.name || (
-                <span className="text-gray-400 italic">Not provided</span>
-              )}
-            </span>
-          </div>
-        </div>
 
-        {/* GST Number */}
-        <div className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-          <FileText className="mr-3 h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <span className="font-medium text-gray-700 block text-sm mb-1">
-              GST Number
-            </span>
-            <span className="text-gray-900 font-mono text-sm">
-              {data.company?.gstNumber || (
-                <span className="text-gray-400 italic font-sans">Not provided</span>
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Optional: Add status indicator */}
-      {data.company?.name && data.company?.gstNumber && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center text-sm text-green-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-            Company information complete
-          </div>
-        </div>
-      )}
-    </div>
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+                <h3 className="text-xl font-semibold text-gray-900 flex items-center mb-6">
+                  <Users className="mr-3 h-6 w-6 text-indigo-600" />
+                  Company Information
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Company Name */}
+                  <div className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <Building2 className="mr-3 h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-700 block text-sm mb-1">
+                        Company Name
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {data.company?.name || (
+                          <span className="text-gray-400 italic">Not provided</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* GST Number */}
+                  <div className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <FileText className="mr-3 h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-700 block text-sm mb-1">
+                        GST Number
+                      </span>
+                      <span className="text-gray-900 font-mono text-sm">
+                        {data.company?.gstNumber || (
+                          <span className="text-gray-400 italic font-sans">Not provided</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional: Add status indicator */}
+                {data.company?.name && data.company?.gstNumber && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center text-sm text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      Company information complete
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -651,20 +690,20 @@ function StudentDetail() {
               </div>
             </div>
 
-                    {Array.isArray(data.enrollments) && data.enrollments.length > 0 && Object.keys(data.enrollments[0]).length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {data.enrollments.map((enrollment, index) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                      >
-                        <div className="p-6">
-                          <div className="flex sm:flex-row items-center sm:items-center justify-between gap-4 mb-4">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            {Array.isArray(data.enrollments) && data.enrollments.length > 0 && Object.keys(data.enrollments[0]).length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {data.enrollments.map((enrollment, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                  >
+                    <div className="p-6">
+                      <div className="flex sm:flex-row items-center sm:items-center justify-between gap-4 mb-4">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <BookOpen className="w-5 h-5 text-white" />
-                            </div>
-                            {/* <span
+                          </div>
+                          {/* <span
                             className={`ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               (enrollment.status === "active")
                               ? "bg-green-100 text-green-800"
@@ -675,14 +714,14 @@ function StudentDetail() {
                               ? enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)
                               : "Unknown")}
                             </span> */}
-                          </div>
-                          </div>
-                          
-                          <h4 className="font-semibold text-gray-900 mb-2 text-lg">
-                            {enrollment.course?.title || "Untitled Course"}
-                          </h4>
+                        </div>
+                      </div>
 
-                            <div className="mt-4 space-y-1 text-xs text-black">
+                      <h4 className="font-semibold text-gray-900 mb-2 text-lg">
+                        {enrollment.course?.title || "Untitled Course"}
+                      </h4>
+
+                      <div className="mt-4 space-y-1 text-xs text-black">
                         {enrollment.enrolledAt && (
                           <div>
                             <span className="font-medium text-black">Enrolled At:</span>{" "}
@@ -690,113 +729,160 @@ function StudentDetail() {
                           </div>
                         )}
                         {enrollment.accessExpiry && (
-                          <div>
+                          <div className="flex items-center group">
                             <span className="font-medium text-black">Access Expiry:</span>{" "}
-                            {new Date(enrollment.accessExpiry).toLocaleString()}
+                            {editingEnrollmentId === enrollment._id ? (
+                              <div className="flex items-center ml-2 space-x-2">
+                                <input
+                                  type="datetime-local"
+                                  className="border border-gray-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                  value={newExpiryDate}
+                                  onChange={(e) => setNewExpiryDate(e.target.value)}
+                                />
+                                <button
+                                  onClick={() => handleUpdateExpiry(enrollment._id)}
+                                  disabled={updatingExpiry}
+                                  className="p-1 bg-green-100 text-green-600 rounded hover:bg-green-200 transition-colors"
+                                  title="Save"
+                                >
+                                  {updatingExpiry ? (
+                                    <div className="w-3 h-3 border-2 border-green-600 border-t-transparent animate-spin rounded-full"></div>
+                                  ) : (
+                                    <Save className="w-3 h-3" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setEditingEnrollmentId(null)}
+                                  className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="ml-1">{new Date(enrollment.accessExpiry).toLocaleString()}</span>
+                                <button
+                                  onClick={() => {
+                                    setEditingEnrollmentId(enrollment._id);
+                                    // Format date for datetime-local input (YYYY-MM-DDThh:mm)
+                                    const date = new Date(enrollment.accessExpiry);
+                                    const formattedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                                      .toISOString()
+                                      .slice(0, 16);
+                                    setNewExpiryDate(formattedDate);
+                                  }}
+                                  className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-all"
+                                  title="Edit Expiry"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
-                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                            {enrollment.course?.subtitle || "No subtitle available"}
-                          </p>
-                          {/* Drip Setting Button */}
-                            <button
-                              className="inline-flex items-center px-3 py-1.5 bg-rose-100 text-rose-700 rounded-md text-xs font-medium hover:bg-rose-200 transition-colors mb-2"
-                              onClick={() =>
-                                setConfirmDrip({
-                                  courseId: enrollment.course._id,
-                                  courseTitle: enrollment.course?.title || "this course",
-                                })
-                              }
-                            >
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Disable Drip
-                            </button>
-                            {/* Disable Drip for Module Button */}
-                            <button
-                              className="inline-flex items-center px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-md text-xs font-medium hover:bg-yellow-200 transition-colors mb-2 ml-2"
-                              onClick={() =>
-                                setModuleDripPopup({
-                                  courseId: enrollment.course._id,
-                                  courseTitle: enrollment.course?.title || "this course",
-                                })
-                              }
-                            >
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Disable Module Drip
-                            </button>
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                        {enrollment.course?.subtitle || "No subtitle available"}
+                      </p>
+                      {/* Drip Setting Button */}
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 bg-rose-100 text-rose-700 rounded-md text-xs font-medium hover:bg-rose-200 transition-colors mb-2"
+                        onClick={() =>
+                          setConfirmDrip({
+                            courseId: enrollment.course._id,
+                            courseTitle: enrollment.course?.title || "this course",
+                          })
+                        }
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Disable Drip
+                      </button>
+                      {/* Disable Drip for Module Button */}
+                      <button
+                        className="inline-flex items-center px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-md text-xs font-medium hover:bg-yellow-200 transition-colors mb-2 ml-2"
+                        onClick={() =>
+                          setModuleDripPopup({
+                            courseId: enrollment.course._id,
+                            courseTitle: enrollment.course?.title || "this course",
+                          })
+                        }
+                      >
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Disable Module Drip
+                      </button>
 
-                          <div className="flex sm:flex-row items-center sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100">
-                          <a
-                            href={enrollment.course?._id ? `/courses/edit/${enrollment.course._id}` : "#"}
-                            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            View Course
-                            <ArrowRight className="w-4 h-4 ml-1" />
-                          </a>
-                          {enrollment.certificateIssued && (
-                            <span className="inline-flex items-center text-sm text-green-600">
+                      <div className="flex sm:flex-row items-center sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100">
+                        <a
+                          href={enrollment.course?._id ? `/courses/edit/${enrollment.course._id}` : "#"}
+                          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          View Course
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </a>
+                        {enrollment.certificateIssued && (
+                          <span className="inline-flex items-center text-sm text-green-600">
                             <Award className="w-4 h-4 mr-1" />
                             Certified
-                            </span>
-                          )}
+                          </span>
+                        )}
 
-                           {/* Add enrolledAt and accessExpiry */}
-                    
-                          </div>
-                        </div>
-                        <button
-                          className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md text-xs font-medium hover:bg-red-200 transition-colors mb-2"
-                          onClick={() => setConfirmRemove({ id: enrollment._id, title: enrollment.course?.title || "this course" })}
-                          disabled={removingEnrollmentId === enrollment._id}
-                        >
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Remove Enrollment
-                        </button>
+                        {/* Add enrolledAt and accessExpiry */}
+
                       </div>
-                    ))}
                     </div>
-                  ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-                    <BookOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                    <h3 className="text-xl font-medium text-gray-900 mb-2">
-                      No Enrolled Courses
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      This student hasn't enrolled in any courses yet. Get started by enrolling them in a course.
-                    </p>
                     <button
-                      onClick={() => setEnrollPopupOpen(true)}
-                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md text-xs font-medium hover:bg-red-200 transition-colors mb-2"
+                      onClick={() => setConfirmRemove({ id: enrollment._id, title: enrollment.course?.title || "this course" })}
+                      disabled={removingEnrollmentId === enrollment._id}
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Enroll in Course
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Remove Enrollment
                     </button>
-                    </div>
-                  )}
-                </div>
-                )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                <BookOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">
+                  No Enrolled Courses
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  This student hasn't enrolled in any courses yet. Get started by enrolling them in a course.
+                </p>
+                <button
+                  onClick={() => setEnrollPopupOpen(true)}
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Enroll in Course
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-      {activeTab === "profile" && (
+        {activeTab === "profile" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-6">
-        <User className="mr-2 h-5 w-5 text-indigo-500" />
-        About {data.fullName}
-      </h3>
-      {data.bio ? (
-        <div className="prose prose-indigo max-w-none">
-          <p className="text-gray-700 whitespace-pre-line">{data.bio}</p>
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600">
-            {data.fullName} hasn't added a bio yet
-          </p>
-        </div>
-      )}
-    </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-6">
+                <User className="mr-2 h-5 w-5 text-indigo-500" />
+                About {data.fullName}
+              </h3>
+              {data.bio ? (
+                <div className="prose prose-indigo max-w-none">
+                  <p className="text-gray-700 whitespace-pre-line">{data.bio}</p>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-600">
+                    {data.fullName} hasn't added a bio yet
+                  </p>
+                </div>
+              )}
+            </div>
             {/* Skills */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-6">
@@ -809,7 +895,7 @@ function StudentDetail() {
                   if (!skills) return [];
                   if (Array.isArray(skills)) {
                     // If it's an array, flatten any comma-separated strings
-                    return skills.flatMap(skill => 
+                    return skills.flatMap(skill =>
                       typeof skill === 'string' ? skill.split(',').map(s => s.trim()).filter(Boolean) : skill
                     );
                   }
@@ -821,7 +907,7 @@ function StudentDetail() {
                 };
 
                 const skillsArray = parseSkills(data.skills);
-                
+
                 return skillsArray.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {skillsArray.map((skill, index) => (
@@ -960,13 +1046,13 @@ function StudentDetail() {
                           Download
                         </a> */}
                         <a
-  href={doc.Doc ? `${ImageUrl}/${doc.Doc}` : "#"}
-  download={doc.name || `document-${index + 1}.pdf`}
-  className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
->
-  <Download className="w-3 h-3 mr-1" />
-  Download
-</a>
+                          href={doc.Doc ? `${ImageUrl}/${doc.Doc}` : "#"}
+                          download={doc.name || `document-${index + 1}.pdf`}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download
+                        </a>
 
                       </div>
                     </div>
@@ -1182,11 +1268,10 @@ function StudentDetail() {
       {/* Toast Message */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-white flex items-center space-x-3 transition-all duration-300 ${
-            toast.type === "success"
-              ? "bg-emerald-600"
-              : "bg-rose-600"
-          }`}
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-white flex items-center space-x-3 transition-all duration-300 ${toast.type === "success"
+            ? "bg-emerald-600"
+            : "bg-rose-600"
+            }`}
         >
           {toast.type === "success" ? (
             <CheckCircle className="w-5 h-5 text-white" />

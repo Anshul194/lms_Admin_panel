@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
-import { fetchForumThreadById, updateForumThread } from "../../store/slices/forumSlice";
+import { fetchForumThreadById, updateForumThread, createForumThread } from "../../store/slices/forumSlice";
 import { RootState } from "../../store";
 import { ArrowLeft, Upload, X, Loader2, Save, Paperclip } from "lucide-react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_IMAGE_URL || "http://localhost:5000";
 
 const EditForumThread: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { selectedThread, loading, error } = useAppSelector((state: RootState) => state.forum);
+  const isEditMode = !!threadId;
   const token = useAppSelector((state: RootState) => state.auth.token);
 
   const [formData, setFormData] = useState({
@@ -27,20 +28,26 @@ const EditForumThread: React.FC = () => {
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (threadId && token) {
+    if (isEditMode && token) {
       dispatch(fetchForumThreadById({ threadId, token }));
     }
-  }, [threadId, token, dispatch]);
+  }, [isEditMode, threadId, token, dispatch]);
 
   useEffect(() => {
-    if (selectedThread) {
+    if (isEditMode && selectedThread) {
       setFormData({
         title: selectedThread.title || "",
         content: selectedThread.content || "",
         tags: Array.isArray(selectedThread.tags) ? selectedThread.tags : [],
       });
+    } else if (!isEditMode) {
+      setFormData({
+        title: "",
+        content: "",
+        tags: [],
+      });
     }
-  }, [selectedThread]);
+  }, [isEditMode, selectedThread]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -76,32 +83,44 @@ const EditForumThread: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!threadId || !token) return;
+    if (!token) return;
 
     setUpdating(true);
     setUpdateError(null);
 
     try {
-      await dispatch(updateForumThread({ 
-        threadId, 
-        data: {
-          title: formData.title,
-          content: formData.content,
-          tags: formData.tags,
-          files: files
-        },
-        token 
-      })).unwrap();
+      if (isEditMode) {
+        await dispatch(updateForumThread({
+          threadId: threadId!,
+          data: {
+            title: formData.title,
+            content: formData.content,
+            tags: formData.tags,
+            files: files
+          },
+          token
+        })).unwrap();
+      } else {
+        await dispatch(createForumThread({
+          data: {
+            title: formData.title,
+            content: formData.content,
+            tags: formData.tags,
+            files: files
+          },
+          token
+        })).unwrap();
+      }
 
       navigate("/forum");
     } catch (err: any) {
-      setUpdateError(err?.message || "Failed to update thread");
+      setUpdateError(err?.message || `Failed to ${isEditMode ? 'update' : 'create'} thread`);
     } finally {
       setUpdating(false);
     }
   };
 
-  if (loading) {
+  if (loading && isEditMode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -109,7 +128,7 @@ const EditForumThread: React.FC = () => {
     );
   }
 
-  if (error || !selectedThread) {
+  if (isEditMode && (error || !selectedThread)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -127,9 +146,9 @@ const EditForumThread: React.FC = () => {
 
   return (
     <div>
-      <PageMeta title="Edit Forum Thread | LMS Admin" description="Edit forum thread" />
-      <PageBreadcrumb pageTitle="Edit Forum Thread" />
-      
+      <PageMeta title={`${isEditMode ? 'Edit' : 'Create'} Forum Thread | LMS Admin`} description={`${isEditMode ? 'Edit' : 'Create'} forum thread`} />
+      <PageBreadcrumb pageTitle={`${isEditMode ? 'Edit' : 'Create'} Forum Thread`} />
+
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <div className="flex items-center gap-4 mb-6">
           <button
@@ -139,7 +158,7 @@ const EditForumThread: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
             Back to Forum
           </button>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Edit Thread</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">{isEditMode ? 'Edit Thread' : 'Create New Thread'}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
@@ -217,7 +236,7 @@ const EditForumThread: React.FC = () => {
           </div>
 
           {/* Existing Attachments */}
-          {selectedThread.attachments?.length > 0 && (
+          {isEditMode && selectedThread && selectedThread.attachments && selectedThread.attachments.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Current Attachments
@@ -254,7 +273,7 @@ const EditForumThread: React.FC = () => {
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {selectedThread.attachments?.length > 0 ? 'Replace Attachments' : 'Add Attachments'}
+              {isEditMode && selectedThread && selectedThread.attachments && selectedThread.attachments.length > 0 ? 'Replace Attachments' : 'Add Attachments'}
             </label>
             <div className="flex items-center justify-center w-full">
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-700 dark:border-gray-600">
@@ -325,12 +344,12 @@ const EditForumThread: React.FC = () => {
               {updating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Updating...
+                  {isEditMode ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  Update Thread
+                  {isEditMode ? 'Update Thread' : 'Create Thread'}
                 </>
               )}
             </button>
