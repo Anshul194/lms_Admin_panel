@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
-import { fetchForumThreads, updateForumThreadStatus, setPage, setLimit, setStatusFilter, updateForumThreadOpenSource } from "../../store/slices/forumSlice";
+import { fetchForumThreads, updateForumThreadStatus, setPage, setLimit, setStatusFilter, updateForumThreadOpenSource, deleteForumThread } from "../../store/slices/forumSlice";
 import { RootState } from "../../store";
-import { ChevronLeft, ChevronRight, Search, Filter, RotateCcw, Pencil, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Filter, RotateCcw, Pencil, CheckCircle, XCircle, Loader2, Eye, Trash2, Plus } from "lucide-react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { useNavigate } from "react-router-dom";
@@ -90,6 +90,15 @@ const ForumThreadList: React.FC = () => {
     }
   };
 
+  const handleDeleteThread = async (threadId: string) => {
+    if (!token || !window.confirm("Are you sure you want to delete this thread?")) return;
+    try {
+      await dispatch(deleteForumThread({ threadId, token }) as any).unwrap();
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete thread");
+    }
+  };
+
   // Status badge
   const getStatusBadge = (isApproved: boolean | string | undefined) => {
     let status: string;
@@ -134,7 +143,16 @@ const ForumThreadList: React.FC = () => {
       <PageBreadcrumb pageTitle="Forum Threads" />
       <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Forum Threads</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Forum Threads</h1>
+            <button
+              onClick={() => navigate("/forum/create")}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Thread</span>
+            </button>
+          </div>
           <span className="text-gray-500 text-sm dark:text-gray-400">Total: {pagination.total}</span>
         </div>
         <div className="bg-white shadow p-4 rounded-md mb-6 dark:bg-gray-900">
@@ -157,7 +175,7 @@ const ForumThreadList: React.FC = () => {
                 className="border border-gray-300 rounded-md px-3 py-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
               >
                 <option value="">All Status</option>
-    
+
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
@@ -236,14 +254,27 @@ const ForumThreadList: React.FC = () => {
                           onClick={() => navigate(`/forum/${thread._id}`)}
                           title="View Details"
                         >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-2 rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+                          onClick={() => navigate(`/forum/edit/${thread._id}`)}
+                          title="Edit Thread"
+                        >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          className={`p-2 rounded-md transition ${
-                            thread.Is_openSource
-                              ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          } disabled:opacity-50`}
+                          className="p-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition"
+                          onClick={() => handleDeleteThread(thread._id)}
+                          title="Delete Thread"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          className={`p-2 rounded-md transition ${thread.Is_openSource
+                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            } disabled:opacity-50`}
                           onClick={() => handleToggleOpenSource(thread)}
                           disabled={openSourceLoading === thread._id}
                           title={thread.Is_openSource ? "Set as Not Open Source" : "Set as Open Source"}
@@ -257,11 +288,10 @@ const ForumThreadList: React.FC = () => {
                           )}
                         </button>
                         <button
-                          className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition ${
-                            thread.isApproved
-                              ? "bg-red-100 text-red-700 hover:bg-red-200"
-                              : "bg-green-100 text-green-700 hover:bg-green-200"
-                          } disabled:opacity-50`}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium transition ${thread.isApproved
+                            ? "bg-red-100 text-red-700 hover:bg-red-200"
+                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                            } disabled:opacity-50`}
                           onClick={() => handleToggleApproved(thread)}
                           disabled={modalLoading}
                         >
@@ -306,11 +336,10 @@ const ForumThreadList: React.FC = () => {
               <button
                 key={idx}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded ${
-                  pagination.page === pageNum
-                    ? "bg-indigo-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                className={`px-3 py-1 rounded ${pagination.page === pageNum
+                  ? "bg-indigo-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
               >
                 {pageNum}
               </button>

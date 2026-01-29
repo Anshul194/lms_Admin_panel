@@ -227,6 +227,7 @@ export default function App() {
               />
 
               <Route path="/forum" element={<ForumThreadList />} />
+              <Route path="/forum/create" element={<EditForumThread />} />
               <Route path="/forum/:threadId" element={<ForumDetails />} />
               <Route path="/forum/edit/:threadId" element={<EditForumThread />} />
 
