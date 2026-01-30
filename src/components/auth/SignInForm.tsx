@@ -6,12 +6,13 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
-import { 
-  login, 
-  clearError, 
-  selectLoginStatus, 
-  selectAuthError, 
-  selectIsAuthenticated 
+import {
+  login,
+  clearError,
+  selectLoginStatus,
+  selectAuthError,
+  selectIsAuthenticated,
+  selectCurrentUser,
 } from "../../store/slices/authslice"; // Adjust path as needed
 import type { AppDispatch } from "../../store"; // <-- Import your AppDispatch type
 
@@ -35,13 +36,19 @@ export default function SignInForm() {
   const loginStatus = useSelector(selectLoginStatus);
   const authError = useSelector(selectAuthError);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const currentUser = useSelector(selectCurrentUser);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated — respect role
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/"); // Adjust redirect path as needed
+      const role = currentUser?.role || localStorage.getItem("role");
+      if (role === "news_editor") {
+        navigate("/news");
+      } else {
+        navigate("/");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, currentUser, navigate]);
 
   // Clear errors when component mounts
   useEffect(() => {
@@ -103,8 +110,22 @@ export default function SignInForm() {
       }));
 
       if (login.fulfilled.match(result)) {
-        // Login successful - navigation will be handled by useEffect
-        console.log("Login successful");
+        // Login successful - persist role and navigate based on role
+        const payloadUser = result.payload?.user;
+        try {
+          const roleToStore = payloadUser?.role || payloadUser?.data?.role;
+          if (roleToStore) {
+            localStorage.setItem("role", String(roleToStore));
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        if (payloadUser?.role === "news_editor") {
+          navigate("/news");
+        } else {
+          navigate("/");
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
