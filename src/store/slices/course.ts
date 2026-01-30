@@ -63,7 +63,15 @@ export const fetchCourses = createAsyncThunk<
         totalPages: data?.totalPages || 0,
       };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch courses");
+      console.error('Fetch courses error:', error);
+      // Return empty data instead of rejecting to prevent blocking the form
+      return {
+        courses: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      };
     }
   }
 );

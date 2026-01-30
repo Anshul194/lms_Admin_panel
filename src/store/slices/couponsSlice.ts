@@ -125,9 +125,21 @@ export const fetchCouponById = createAsyncThunk(
   "coupons/fetchCouponById",
   async (id: string, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get(`/coupons/${id}`);
+      console.log("API Call: GET /coupons/" + id);
+      // Add cache-busting headers to prevent 304 Not Modified responses
+      const res = await axiosInstance.get(`/coupons/${id}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+        params: {
+          _t: Date.now() // Add timestamp to query string to bust cache
+        }
+      });
+      console.log("API Response:", res.data);
       return res.data;
     } catch (err: any) {
+      console.error("API Error:", err);
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
@@ -224,11 +236,16 @@ const couponsSlice = createSlice({
       })
       .addCase(fetchCouponById.fulfilled, (state, action) => { 
         state.loading = false; 
-        state.singleCoupon = action.payload; 
+        console.log("Reducer - Full payload:", action.payload);
+        // Extract coupon from response data structure: { success: true, data: { coupon }, ... }
+        const coupon = action.payload?.data?.coupon || action.payload?.coupon || action.payload;
+        console.log("Reducer - Extracted coupon:", coupon);
+        state.singleCoupon = coupon; 
       })
       .addCase(fetchCouponById.rejected, (state, action) => { 
         state.loading = false; 
         state.error = action.payload as string; 
+        console.error("Reducer - Fetch error:", action.payload);
       })
 
       // UPDATE
@@ -256,17 +273,52 @@ const couponsSlice = createSlice({
       })
       .addCase(deleteCoupon.fulfilled, (state, action) => {
         state.loading = false;
+        // Use deletedId from payload or fallback to meta.arg
+        const deletedId = String(action.payload?.deletedId || action.meta.arg);
+        console.log("Delete fulfilled - Removing coupon ID:", deletedId);
+        console.log("Current coupons:", state.data?.data?.coupons?.map(c => c._id));
+        
         if (state.data?.data?.coupons) {
-          state.data.data.coupons = state.data.data.coupons.filter(c => 
-            c._id !== action.meta.arg
-          );
-          // Update pagination total
-          state.pagination.total = Math.max(0, state.pagination.total - 1);
+          const beforeCount = state.data.data.coupons.length;
+          // Create a new filtered array to ensure React detects the change
+          const filteredCoupons = state.data.data.coupons.filter(c => {
+            // Ensure both IDs are strings for comparison
+            const couponId = String(c._id);
+            const shouldKeep = couponId !== deletedId;
+            if (!shouldKeep) {
+              console.log("Removing coupon:", c.code, couponId, "matches", deletedId);
+            }
+            return shouldKeep;
+          });
+          const afterCount = filteredCoupons.length;
+          console.log(`Coupons before: ${beforeCount}, after: ${afterCount}`);
+          
+          // Update state with new array reference
+          if (state.data && state.data.data) {
+            state.data.data.coupons = filteredCoupons;
+            
+            // Update pagination total
+            if (beforeCount > afterCount) {
+              state.pagination.total = Math.max(0, state.pagination.total - 1);
+              // Recalculate totalPages
+              state.pagination.totalPages = Math.ceil(state.pagination.total / state.pagination.limit);
+              // Also update pagination in data if it exists
+              if (state.data.data.pagination) {
+                state.data.data.pagination.total = state.pagination.total;
+                state.data.data.pagination.totalPages = state.pagination.totalPages;
+              }
+            } else {
+              console.warn("No coupon was removed! ID mismatch or coupon not found.");
+            }
+          }
+        } else {
+          console.warn("No coupons array found in state.data.data");
         }
       })
       .addCase(deleteCoupon.rejected, (state, action) => { 
         state.loading = false; 
         state.error = action.payload as string; 
+        console.error("Delete rejected:", action.payload);
       });
   }
 });

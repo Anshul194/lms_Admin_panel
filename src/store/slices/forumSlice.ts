@@ -75,12 +75,12 @@ const initialState: ForumState = {
 export const fetchForumThreads = createAsyncThunk(
   "forum/fetchThreads",
   async (
-    { page = 1, limit = 10, token }: { page?: number; limit?: number; token: string },
+    { page = 1, limit = 10, token, status }: { page?: number; limit?: number; token: string; status?: string },
     { rejectWithValue }
   ) => {
     try {
       const response = await axiosInstance.get(
-        `/forum/all-threads-with-replies?isApproved=all&page=${page}&limit=${limit}`,
+        `/forum/all-threads-with-replies?isApproved=${status || "all"}&page=${page}&limit=${limit}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -183,24 +183,55 @@ export const fetchThreadReplies = createAsyncThunk(
 );
 
 /**
+ * Create a new forum thread
+ */
+export const createForumThread = createAsyncThunk(
+  "forum/createThread",
+  async (
+    { data, token }: { data: { title: string; content: string; tags: string[]; files?: File[] }; token: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("content", data.content);
+      data.tags.forEach((tag, index) => formData.append(`tags[${index}]`, tag));
+      if (data.files && data.files.length > 0) {
+        data.files.forEach((file) => formData.append("files", file));
+      }
+
+      const response = await axiosInstance.post("/forum/thread", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data?.data || {};
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+/**
  * Update Forum Thread with file uploads and tags as array
  */
 export const updateForumThread = createAsyncThunk(
   "forum/updateThread",
   async (
-    { 
-      threadId, 
+    {
+      threadId,
       data,
-      token 
-    }: { 
-      threadId: string; 
+      token
+    }: {
+      threadId: string;
       data: {
         title: string;
         content: string;
         tags: string[];
         files?: File[];
       };
-      token: string 
+      token: string
     },
     { rejectWithValue }
   ) => {
@@ -208,12 +239,12 @@ export const updateForumThread = createAsyncThunk(
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("content", data.content);
-      
+
       // Handle tags as array
       data.tags.forEach((tag, index) => {
         formData.append(`tags[${index}]`, tag);
       });
-      
+
       // Handle multiple file attachments
       if (data.files && data.files.length > 0) {
         data.files.forEach((file) => {
@@ -232,6 +263,64 @@ export const updateForumThread = createAsyncThunk(
         }
       );
       return { threadId, ...response.data?.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+/**
+ * Delete a forum thread
+ */
+export const deleteForumThread = createAsyncThunk(
+  "forum/deleteThread",
+  async ({ threadId, token }: { threadId: string; token: string }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.delete(`/forum/thread/${threadId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { threadId, ...response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+/**
+ * Update a forum reply
+ */
+export const updateForumReply = createAsyncThunk(
+  "forum/updateReply",
+  async (
+    { replyId, content, token }: { replyId: string; content: string; token: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axiosInstance.put(
+        `/forum/reply/${replyId}`,
+        { content },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data?.data || {};
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+/**
+ * Delete a forum reply
+ */
+export const deleteForumReply = createAsyncThunk(
+  "forum/deleteReply",
+  async ({ replyId, token }: { replyId: string; token: string }, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/forum/reply/${replyId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { replyId };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }
@@ -318,9 +407,9 @@ const forumSlice = createSlice({
         state.repliesError = null;
       })
       .addCase(fetchThreadReplies.fulfilled, (state, action: PayloadAction<ForumReply[]>) => {
-  state.repliesLoading = false;
-  state.threadReplies = action.payload; // now it's always an array
-})
+        state.repliesLoading = false;
+        state.threadReplies = action.payload; // now it's always an array
+      })
 
       .addCase(fetchThreadReplies.rejected, (state, action) => {
         state.repliesLoading = false;
@@ -348,6 +437,30 @@ const forumSlice = createSlice({
       .addCase(updateForumThread.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+
+      // Delete thread
+      .addCase(deleteForumThread.fulfilled, (state, action: PayloadAction<any>) => {
+        const { threadId } = action.payload;
+        state.threads = state.threads.filter((t) => t._id !== threadId);
+        if (state.selectedThread?._id === threadId) {
+          state.selectedThread = null;
+        }
+      })
+
+      // Update reply
+      .addCase(updateForumReply.fulfilled, (state, action: PayloadAction<any>) => {
+        const updatedReply = action.payload;
+        const index = state.threadReplies.findIndex((r) => r._id === updatedReply._id);
+        if (index !== -1) {
+          state.threadReplies[index] = { ...state.threadReplies[index], ...updatedReply };
+        }
+      })
+
+      // Delete reply
+      .addCase(deleteForumReply.fulfilled, (state, action: PayloadAction<any>) => {
+        const { replyId } = action.payload;
+        state.threadReplies = state.threadReplies.filter((r) => r._id !== replyId);
       });
   },
 });

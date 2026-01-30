@@ -3,11 +3,14 @@ import axios from 'axios';
 import axiosInstance from '../../services/axiosConfig';
 
 interface Testimonial {
+    _id?: string;
     name: string;
     role: string;
     message: string;
     rating: number;
     courseId: string;
+    image?: string;
+    video?: string;
 }
 
 interface TestimonialState {
@@ -24,7 +27,7 @@ const initialState: TestimonialState = {
 
 export const addTestimonial = createAsyncThunk<
     void,
-    { testimonial: Testimonial; token: string },
+    { testimonial: FormData; token: string },
     { rejectValue: string }
 >('testimonial/addTestimonial', async ({ testimonial, token }, { rejectWithValue }) => {
     try {
@@ -33,7 +36,7 @@ export const addTestimonial = createAsyncThunk<
             testimonial,
             {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${token}`,
                 },
             }
@@ -69,7 +72,7 @@ export const fetchTestimonials = createAsyncThunk<
 
 export const updateTestimonial = createAsyncThunk<
     void,
-    { testimonialId: string; data: { message?: string; status?: string; rating?: number }; token: string },
+    { testimonialId: string; data: FormData; token: string },
     { rejectValue: string }
 >('testimonial/updateTestimonial', async ({ testimonialId, data, token }, { rejectWithValue }) => {
     try {
@@ -78,7 +81,7 @@ export const updateTestimonial = createAsyncThunk<
             data,
             {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${token}`,
                 },
             }
@@ -196,9 +199,9 @@ const testimonialSlice = createSlice({
                 state.loading = true;
                 state.error = null;
                 state.success = false;
-            }   
+            }
             )
-            .addCase(deleteTestimonial.fulfilled, (state) => {  
+            .addCase(deleteTestimonial.fulfilled, (state) => {
                 state.loading = false;
                 state.success = true;
             })

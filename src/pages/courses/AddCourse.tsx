@@ -30,12 +30,17 @@ import {
   PlayCircle,
   FileEdit,
   Layers,
+  Layout,
 } from "lucide-react";
 import { createCourse } from "../../store/slices/course";
 import CategorySubcategoryDropdowns from "../../components/CategorySubcategoryDropdowns";
 import PopupAlert from "../../components/popUpAlert";
-import QuillEditor from "../../components/QuillEditor";
 import { useNavigate } from "react-router-dom";
+import Editor from "../../components/Editor";
+import QuillEditor from "../../components/QuillEditor";
+
+
+
 
 // Validation schema
 type FormErrors = {
@@ -51,6 +56,7 @@ type FormErrors = {
   thumbnailFile?: string;
   demoVideoUrl?: string;
   salePrice?: any;
+  coursePosition?: string;
 };
 
 const validateForm = (
@@ -69,24 +75,23 @@ const validateForm = (
     errors.title = "Title must be less than 100 characters";
   }
 
-  // if (formData.price) {
-  //   if (isNaN(formData.price) || formData.price < 0) {
-  //     errors.price = "Price must be a non-negative number";
-  //   } else if (formData.price > 100000) {
-  //     errors.price = "Price cannot exceed 100,000";
-  //   }
-  // } else {
-  //   errors.price = "Price is required";
-  // }
+  // Validate price if provided (allows free courses with price = 0 or empty)
+  if (formData.price && formData.price.trim() !== "") {
+    if (isNaN(formData.price) || formData.price < 0) {
+      errors.price = "Price must be a non-negative number";
+    } else if (formData.price > 100000) {
+      errors.price = "Price cannot exceed 100,000";
+    }
+  }
 
   // Validate salePrice only if it's provided
-  // if (formData.salePrice && formData.salePrice.trim() !== "") {
-  //   if (isNaN(formData.salePrice) || formData.salePrice < 0) {
-  //     errors.salePrice = "Sale price must be a non-negative number";
-  //   } else if (formData.salePrice > 100000) {
-  //     errors.salePrice = "Sale price cannot exceed 100,000";
-  //   }
-  // }
+  if (formData.salePrice && formData.salePrice.trim() !== "") {
+    if (isNaN(formData.salePrice) || formData.salePrice < 0) {
+      errors.salePrice = "Sale price must be a non-negative number";
+    } else if (formData.salePrice > 100000) {
+      errors.salePrice = "Sale price cannot exceed 100,000";
+    }
+  }
 
   if (formData.seoMetaDescription.length > 160) {
     errors.seoMetaDescription =
@@ -118,7 +123,7 @@ const validateForm = (
 };
 
 // Success Popup Component
-const SuccessPopup = ({ isVisible, onClose, onAddContent, courseId }) => {
+const SuccessPopup = ({ isVisible, onClose, onAddContent, courseId }: { isVisible: boolean; onClose: () => void; onAddContent?: () => void; courseId?: string }) => {
   const navigate = useNavigate();
 
   if (!isVisible) return null;
@@ -228,11 +233,17 @@ const FileUpload = ({
   onFileChange,
   currentFile,
   icon: Icon,
+}: {
+  label: string;
+  accept: string;
+  onFileChange: (file: File | null) => void;
+  currentFile: File | null;
+  icon: React.ComponentType<{ className?: string }>;
 }) => {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
 
-  const validateFile = (file) => {
+  const validateFile = (file: File | null) => {
     if (!file) return "";
     if (file.size > 5 * 1024 * 1024) {
       return "File size must be less than 5MB";
@@ -243,7 +254,7 @@ const FileUpload = ({
     return "";
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
     const files = e.dataTransfer.files;
@@ -258,7 +269,7 @@ const FileUpload = ({
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     const fileError = validateFile(file);
     if (fileError) {
@@ -276,11 +287,10 @@ const FileUpload = ({
         {label}
       </label>
       <div
-        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${
-          dragOver
-            ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30"
-            : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
-        } ${error ? "border-red-400" : ""}`}
+        className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 ${dragOver
+          ? "border-blue-400 bg-blue-50 dark:bg-blue-900/30"
+          : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+          } ${error ? "border-red-400" : ""}`}
         onDrop={handleDrop}
         onDragOver={(e) => {
           e.preventDefault();
@@ -314,7 +324,7 @@ const FileUpload = ({
 };
 
 // YouTube URL Input Component
-const YouTubeUrlInput = ({ label, value, onChange, error }) => {
+const YouTubeUrlInput = ({ label, value, onChange, error }: { label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; error?: string }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
@@ -325,9 +335,8 @@ const YouTubeUrlInput = ({ label, value, onChange, error }) => {
         type="text"
         value={value}
         onChange={onChange}
-        className={`w-full border rounded-xl px-4 py-3 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${
-          error ? "border-red-400" : "border-gray-200 dark:border-gray-600"
-        }`}
+        className={`w-full border rounded-xl px-4 py-3 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${error ? "border-red-400" : "border-gray-200 dark:border-gray-600"
+          }`}
         placeholder="Enter demo video YouTube URL"
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
@@ -351,13 +360,13 @@ const YouTubeUrlInput = ({ label, value, onChange, error }) => {
 
 const AddCourse = () => {
   const dispatch = useDispatch();
-  const { loading, error, data } = useSelector((state) => state.course);
+  const { loading, error, data } = useSelector((state: any) => state.course);
   const navigate = useNavigate();
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
-  const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [coverImageFile, setCoverImageFile] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [demoVideoUrl, setDemoVideoUrl] = useState("");
   const [description, setDescription] = useState("");
   const [seoContent, setSeoContent] = useState("");
@@ -371,7 +380,7 @@ const AddCourse = () => {
   const [activeTab, setActiveTab] = useState("basic");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: "",
     subtitle: "",
     seoMetaDescription: "",
@@ -392,9 +401,48 @@ const AddCourse = () => {
     courseForum: false,
     isSubscription: false,
     isPrivate: false,
-    enableWaitlist: false
-    ,
-    coursePosition: ""
+    enableWaitlist: false,
+    coursePosition: "",
+    // Mentor fields
+    mentorName: "",
+    mentorTitle: "",
+    mentorDescription: "",
+    mentorImage: "",
+    mentorImageFile: null as File | null,
+    mentorAchievements: [] as string[],
+    mentorSocialLinks: {
+      linkedin: "",
+      twitter: "",
+      youtube: "",
+      website: ""
+    },
+    // Learning outcomes and target audience
+    learningOutcomes: [],
+    targetAudience: [],
+    // Certificate fields
+    certificateImage: "",
+    certificateImageFile: null,
+    certificateTitle: "Certificate of Completion",
+    certificateSubtitle: "Awarded for Excellence",
+    certificateRecipientName: "Student Name",
+    certificateIssuerName: "",
+    certificateIssuerTitle: "",
+    certificateOrganization: "Lapaas LMS",
+    certificateDescription: "",
+    // Enhanced Landing Page Sections
+    overviewSection: { show: false, title: "", subtitle: "", description: null, images: [] },
+    comparisonSection: {
+      show: false,
+      title: "",
+      leftTitle: "Traditional Program",
+      rightTitle: "Our Program",
+      content: null,
+      leftPoints: [],
+      rightPoints: []
+    },
+    benefitsSection: { show: false, title: "", content: null, points: [""] },
+    frameworkSection: { show: false, title: "", subtitle: "", description: null, media: "" },
+    solutionSection: { show: false, title: "", content: null, points: [""] },
   });
 
   // Plans state
@@ -427,13 +475,16 @@ const AddCourse = () => {
     "Web Development",
   ];
 
-  const getUrlFromFile = (file) => {
+  const getUrlFromFile = (file: File | null) => {
     if (!file) return "";
     return URL.createObjectURL(file);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const { name, value } = target;
+    const type = (target as HTMLInputElement).type;
+    const checked = type === "checkbox" ? (target as HTMLInputElement).checked : undefined;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -441,7 +492,7 @@ const AddCourse = () => {
     setFormErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const addTag = (tag) => {
+  const addTag = (tag: string) => {
     if (selectedTags.length >= 5) {
       setPopup({
         isVisible: true,
@@ -456,7 +507,7 @@ const AddCourse = () => {
     }
   };
 
-  const removeTag = (tagToRemove) => {
+  const removeTag = (tagToRemove: string) => {
     setSelectedTags(selectedTags.filter((tag) => tag !== tagToRemove));
   };
 
@@ -479,7 +530,7 @@ const AddCourse = () => {
     }
   };
 
-  const handleCategoryChange = (categoryId) => {
+  const handleCategoryChange = (categoryId: string) => {
     setFormData((prev) => ({
       ...prev,
       categoryId,
@@ -488,7 +539,7 @@ const AddCourse = () => {
     setFormErrors((prev) => ({ ...prev, categoryId: "", subCategoryId: "" }));
   };
 
-  const handleSubcategoryChange = (subCategoryId) => {
+  const handleSubcategoryChange = (subCategoryId: string) => {
     setFormData((prev) => ({
       ...prev,
       subCategoryId,
@@ -512,7 +563,7 @@ const AddCourse = () => {
     setPlans(plans.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = async (e, isDraft = false) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft = false) => {
     e.preventDefault();
 
     const files = { thumbnailFile, coverImageFile };
@@ -538,11 +589,60 @@ const AddCourse = () => {
 
     const submitFormData = new FormData();
     Object.keys(formData).forEach((key) => {
-      const value = formData[key];
+      const value = (formData as any)[key];
       if (key === 'salePrice' && (!value || value === '')) {
         return;
+      } else if (key === "learningOutcomes" || key === "targetAudience" || key === "mentorAchievements") {
+        // Handle arrays properly
+        if (Array.isArray(value) && value.length > 0) {
+          submitFormData.append(key, JSON.stringify(value.filter(item => item && item.trim() !== "")));
+        }
+      } else if (key === "mentorSocialLinks") {
+        // Handle mentor social links object
+        if (value && typeof value === "object") {
+          submitFormData.append(key, JSON.stringify(value));
+        }
+      } else if (key === "mentorImageFile") {
+        // Handle mentor image file upload
+        if (value) {
+          submitFormData.set("mentorImage", value);
+        }
+      } else if (key === "certificateImageFile") {
+        // Handle certificate image file upload
+        if (value) {
+          submitFormData.set("certificateImage", value);
+        }
+      } else if (["overviewSection", "comparisonSection", "benefitsSection", "frameworkSection", "solutionSection"].includes(key)) {
+        // Handle landing page sections
+        if (value && typeof value === "object") {
+          // Clean up comparisonSection: filter out empty strings from points arrays
+          if (key === "comparisonSection") {
+            const cleanedSection = {
+              ...value,
+              leftPoints: Array.isArray(value.leftPoints) 
+                ? value.leftPoints.filter((point: any) => point != null && String(point).trim() !== '')
+                : [],
+              rightPoints: Array.isArray(value.rightPoints)
+                ? value.rightPoints.filter((point: any) => point != null && String(point).trim() !== '')
+                : []
+            };
+            submitFormData.append(key, JSON.stringify(cleanedSection));
+          } else if (key === "benefitsSection" || key === "solutionSection") {
+            // Clean up benefitsSection and solutionSection: filter out empty strings from points array
+            const cleanedSection = {
+              ...value,
+              points: Array.isArray(value.points)
+                ? value.points.filter((point: any) => point != null && String(point).trim() !== '')
+                : []
+            };
+            submitFormData.append(key, JSON.stringify(cleanedSection));
+          } else {
+            submitFormData.append(key, JSON.stringify(value));
+          }
+        }
+      } else if (value !== null && value !== undefined) {
+        submitFormData.append(key, String(value));
       }
-      submitFormData.append(key, String(value));
     });
     submitFormData.append("description", description);
     submitFormData.append("seoContent", seoContent);
@@ -552,6 +652,12 @@ const AddCourse = () => {
 
     if (thumbnailFile) submitFormData.append("thumbnail", thumbnailFile);
     if (coverImageFile) submitFormData.append("coverImage", coverImageFile);
+    if (formData.mentorImageFile) {
+      submitFormData.set("mentorImage", formData.mentorImageFile);
+    }
+    if (formData.certificateImageFile) {
+      submitFormData.set("certificateImage", formData.certificateImageFile);
+    }
 
     // --- FLATTEN PLANS IN PAYLOAD WITHOUT QUOTES ---
     plans.forEach((plan, idx) => {
@@ -596,9 +702,48 @@ const AddCourse = () => {
         courseForum: false,
         isSubscription: false,
         isPrivate: false,
-        enableWaitlist: false
-        ,
-        coursePosition: ""
+        enableWaitlist: false,
+        coursePosition: "",
+        // Mentor fields
+        mentorName: "",
+        mentorTitle: "",
+        mentorDescription: "",
+        mentorImage: "",
+        mentorImageFile: null,
+        mentorAchievements: [],
+        mentorSocialLinks: {
+          linkedin: "",
+          twitter: "",
+          youtube: "",
+          website: ""
+        },
+        // Learning outcomes and target audience
+        learningOutcomes: [],
+        targetAudience: [],
+        // Certificate fields
+        certificateImage: "",
+        certificateImageFile: null,
+        certificateTitle: "Certificate of Completion",
+        certificateSubtitle: "Awarded for Excellence",
+        certificateRecipientName: "Student Name",
+        certificateIssuerName: "",
+        certificateIssuerTitle: "",
+        certificateOrganization: "Lapaas LMS",
+        certificateDescription: "",
+        // Enhanced Landing Page Sections
+        overviewSection: { show: false, title: "", subtitle: "", description: null, images: [] },
+        comparisonSection: {
+          show: false,
+          title: "",
+          leftTitle: "Traditional Program",
+          rightTitle: "Our Program",
+          content: null,
+          leftPoints: [],
+          rightPoints: []
+        },
+        benefitsSection: { show: false, title: "", content: null, points: [""] },
+        frameworkSection: { show: false, title: "", subtitle: "", description: null, media: "" },
+        solutionSection: { show: false, title: "", content: null, points: [""] },
       });
       setDescription("");
       setSeoContent("");
@@ -653,10 +798,12 @@ const AddCourse = () => {
     { key: "tags", title: "Tags", icon: Tag, isRequired: true },
     { key: "settings", title: "Advanced Settings", icon: Users, isRequired: false },
     { key: "seo", title: "SEO Settings", icon: Target, isRequired: false },
+    { key: "mentor", title: "Mentor Information", icon: Users, isRequired: false },
+    { key: "landingPage", title: "Landing Page Sections", icon: Layout, isRequired: false },
   ];
 
   // Check if a section is complete (for sidebar indicators)
-  const isSectionComplete = (tabKey) => {
+  const isSectionComplete = (tabKey: string) => {
     switch (tabKey) {
       case "basic":
         return formData.title.trim() && description.trim();
@@ -686,9 +833,8 @@ const AddCourse = () => {
         onClose={() => setPopup({ isVisible: false, message: "", type: "" })}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 lg:static lg:w-64`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0 lg:static lg:w-64`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -710,11 +856,10 @@ const AddCourse = () => {
                 setActiveTab(tab.key);
                 setIsSidebarOpen(false);
               }}
-              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === tab.key
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 shadow-sm"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
+              className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 shadow-sm"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
             >
               <div className="flex items-center gap-3">
                 <tab.icon className="w-5 h-5" />
@@ -775,11 +920,10 @@ const AddCourse = () => {
                       name="title"
                       value={formData.title}
                       onChange={handleInputChange}
-                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        formErrors.title
-                          ? "border-red-400"
-                          : "border-gray-300 dark:border-gray-600"
-                      }`}
+                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.title
+                        ? "border-red-400"
+                        : "border-gray-300 dark:border-gray-600"
+                        }`}
                       placeholder="Enter course title"
                       required
                     />
@@ -787,27 +931,26 @@ const AddCourse = () => {
                       <p className="mt-1 text-xs text-red-600">{formErrors.title}</p>
                     )}
                   </div>
-                <div className="mt-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    Course Position
-                  </label>
-                  <input
-                    type="number"
-                    name="coursePosition"
-                    value={formData.coursePosition}
-                    onChange={handleInputChange}
-                    min={0}
-                    className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      formErrors.coursePosition
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      Course Position
+                    </label>
+                    <input
+                      type="number"
+                      name="coursePosition"
+                      value={formData.coursePosition}
+                      onChange={handleInputChange}
+                      min={0}
+                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.coursePosition
                         ? "border-red-400"
                         : "border-gray-300 dark:border-gray-600"
-                    }`}
-                    placeholder="Enter course position (numeric)"
-                  />
-                  {formErrors.coursePosition && (
-                    <p className="mt-1 text-xs text-red-600">{formErrors.coursePosition}</p>
-                  )}
-                </div>
+                        }`}
+                      placeholder="Enter course position (numeric)"
+                    />
+                    {formErrors.coursePosition && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.coursePosition}</p>
+                    )}
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                       Course Subtitle
@@ -926,14 +1069,14 @@ const AddCourse = () => {
                   <FileUpload
                     label="Course Thumbnail *"
                     accept="image/*"
-                    onFileChange={setThumbnailFile}
+                    onFileChange={(file) => setThumbnailFile(file)}
                     currentFile={thumbnailFile}
                     icon={Image}
                   />
                   <FileUpload
                     label="Cover Image"
                     accept="image/*"
-                    onFileChange={setCoverImageFile}
+                    onFileChange={(file) => setCoverImageFile(file)}
                     currentFile={coverImageFile}
                     icon={Image}
                   />
@@ -976,10 +1119,10 @@ const AddCourse = () => {
                 <YouTubeUrlInput
                   label="Demo Video URL"
                   value={demoVideoUrl}
-                  onChange={(e) => {
-                    setDemoVideoUrl(e.target.value);
-                    setFormErrors((prev) => ({ ...prev, demoVideoUrl: "" }));
-                  }}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setDemoVideoUrl(e.target.value);
+                      setFormErrors((prev) => ({ ...prev, demoVideoUrl: "" }));
+                    }}
                   error={formErrors.demoVideoUrl}
                 />
               </div>
@@ -989,9 +1132,10 @@ const AddCourse = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Pricing
                 </h3>
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      <DollarSign className="w-4 h-4 inline mr-1" />
                       Price *
                     </label>
                     <input
@@ -1023,6 +1167,7 @@ const AddCourse = () => {
                   </div>
                   <div>
                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                     <DollarSign className="w-4 h-4 inline mr-1" />
                      Sale Price 
                    </label>
                    <input
@@ -1076,7 +1221,7 @@ const AddCourse = () => {
                       </option>
                     </select>
                   </div>
-                </div> */}
+                </div>
                 {/* --- Plans Section --- */}
                 <div className="mt-8">
                   <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
@@ -1206,11 +1351,10 @@ const AddCourse = () => {
                         key={tag}
                         type="button"
                         onClick={() => addTag(tag)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                          selectedTags.includes(tag)
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                        }`}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${selectedTags.includes(tag)
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          }`}
                       >
                         {tag}
                       </button>
@@ -1364,11 +1508,10 @@ const AddCourse = () => {
                     value={formData.seoMetaDescription}
                     onChange={handleInputChange}
                     rows={3}
-                    className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      formErrors.seoMetaDescription
-                        ? "border-red-400"
-                        : "border-gray-300 dark:border-gray-600"
-                    }`}
+                    className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.seoMetaDescription
+                      ? "border-red-400"
+                      : "border-gray-300 dark:border-gray-600"
+                      }`}
                     placeholder="Brief description for search engines (max 160 characters)"
                     maxLength={160}
                   />
@@ -1394,6 +1537,720 @@ const AddCourse = () => {
                   />
                   {formErrors.seoContent && (
                     <p className="mt-2 text-xs text-red-600">{formErrors.seoContent}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "mentor" && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mentor Information</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      Mentor Name
+                    </label>
+                    <input
+                      type="text"
+                      name="mentorName"
+                      value={formData.mentorName || ""}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter mentor name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      Mentor Title
+                    </label>
+                    <input
+                      type="text"
+                      name="mentorTitle"
+                      value={formData.mentorTitle || ""}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Digital Marketing Expert"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Mentor Description
+                  </label>
+                  <QuillEditor
+                    value={formData.mentorDescription || ""}
+                    onChange={(value: string) => setFormData({ ...formData, mentorDescription: value })}
+                    placeholder="Enter mentor description"
+                    height="200px"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Mentor Image
+                  </label>
+                  <FileUpload
+                    label="Upload Mentor Image"
+                    accept="image/*"
+                    onFileChange={(file: File | null) => {
+                      setFormData({ ...formData, mentorImageFile: file as File | null });
+                    }}
+                    currentFile={formData.mentorImageFile}
+                    icon={Image}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Mentor Achievements
+                  </label>
+                  <div className="space-y-2">
+                    {(formData.mentorAchievements || []).map((achievement, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={achievement}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const updated = [...(formData.mentorAchievements || [] as string[])];
+                              updated[index] = e.target.value;
+                              setFormData({ ...formData, mentorAchievements: updated as string[] });
+                            }}
+                          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter achievement"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (formData.mentorAchievements || []).filter((_, i) => i !== index);
+                            setFormData({ ...formData, mentorAchievements: updated });
+                          }}
+                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                        onClick={() => {
+                          const current = formData.mentorAchievements || [];
+                          setFormData({
+                            ...formData,
+                            mentorAchievements: [...current, ""]
+                          });
+                        }}
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Achievement
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Social Links
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">LinkedIn</label>
+                      <input
+                        type="url"
+                        value={formData.mentorSocialLinks?.linkedin || ""}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          mentorSocialLinks: {
+                            ...(formData.mentorSocialLinks || {}),
+                            linkedin: e.target.value
+                          }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://linkedin.com/in/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">YouTube</label>
+                      <input
+                        type="url"
+                        value={formData.mentorSocialLinks?.youtube || ""}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          mentorSocialLinks: {
+                            ...(formData.mentorSocialLinks || {}),
+                            youtube: e.target.value
+                          }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://youtube.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Twitter</label>
+                      <input
+                        type="url"
+                        value={formData.mentorSocialLinks?.twitter || ""}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          mentorSocialLinks: {
+                            ...(formData.mentorSocialLinks || {}),
+                            twitter: e.target.value
+                          }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://twitter.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Website</label>
+                      <input
+                        type="url"
+                        value={formData.mentorSocialLinks?.website || ""}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          mentorSocialLinks: {
+                            ...(formData.mentorSocialLinks || {}),
+                            website: e.target.value
+                          }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "landingPage" && (
+              <div className="space-y-12 pb-10">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 border-b pb-2">Landing Page Customization</h3>
+
+                {/* Overview Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <Layout className="w-5 h-5 text-blue-600" />
+                      Overview Section
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.overviewSection.show}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          overviewSection: { ...formData.overviewSection, show: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Visible</span>
+                    </label>
+                  </div>
+
+                  {formData.overviewSection.show && (
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Section Title (e.g., What is a Solopreneur?)"
+                        value={formData.overviewSection.title}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          overviewSection: { ...formData.overviewSection, title: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Subtitle"
+                        value={formData.overviewSection.subtitle}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          overviewSection: { ...formData.overviewSection, subtitle: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <Editor
+                          holder="overview-editor"
+                          data={formData.overviewSection.description}
+                          onChange={(data) => setFormData({
+                            ...formData,
+                            overviewSection: { ...formData.overviewSection, description: data }
+                          })}
+                          uploadEndpoint="/courses/images"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Comparison Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <Layers className="w-5 h-5 text-blue-600" />
+                      Comparison Section
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.comparisonSection.show}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          comparisonSection: { ...formData.comparisonSection, show: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Visible</span>
+                    </label>
+                  </div>
+
+                  {formData.comparisonSection.show && (
+                    <div className="space-y-6">
+                      <input
+                        type="text"
+                        placeholder="Section Title"
+                        value={formData.comparisonSection.title}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          comparisonSection: { ...formData.comparisonSection, title: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Left Column Title (Traditional Program)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Traditional Program"
+                            value={formData.comparisonSection.leftTitle}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              comparisonSection: { ...formData.comparisonSection, leftTitle: e.target.value }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                          />
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mt-4">
+                            Left Column Points
+                          </label>
+                          <div className="space-y-2">
+                            {(formData.comparisonSection.leftPoints && formData.comparisonSection.leftPoints.length > 0 ? formData.comparisonSection.leftPoints : []).map((point, index) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={point}
+                                  onChange={(e) => {
+                                    const updated = [...(formData.comparisonSection.leftPoints || [])];
+                                    updated[index] = e.target.value;
+                                    setFormData({
+                                      ...formData,
+                                      comparisonSection: { ...formData.comparisonSection, leftPoints: updated }
+                                    });
+                                  }}
+                                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                  placeholder="Enter point"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = (formData.comparisonSection.leftPoints || []).filter((_, i) => i !== index);
+                                    setFormData({
+                                      ...formData,
+                                      comparisonSection: { ...formData.comparisonSection, leftPoints: updated }
+                                    });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  comparisonSection: {
+                                    ...formData.comparisonSection,
+                                    leftPoints: [...(formData.comparisonSection.leftPoints || []), ""]
+                                  }
+                                });
+                              }}
+                              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Left Point
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Right Column Title (Our Program)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Our Program"
+                            value={formData.comparisonSection.rightTitle}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              comparisonSection: { ...formData.comparisonSection, rightTitle: e.target.value }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                          />
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mt-4">
+                            Right Column Points
+                          </label>
+                          <div className="space-y-2">
+                            {(formData.comparisonSection.rightPoints && formData.comparisonSection.rightPoints.length > 0 ? formData.comparisonSection.rightPoints : []).map((point, index) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={point}
+                                  onChange={(e) => {
+                                    const updated = [...(formData.comparisonSection.rightPoints || [])];
+                                    updated[index] = e.target.value;
+                                    setFormData({
+                                      ...formData,
+                                      comparisonSection: { ...formData.comparisonSection, rightPoints: updated }
+                                    });
+                                  }}
+                                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                  placeholder="Enter point"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = (formData.comparisonSection.rightPoints || []).filter((_, i) => i !== index);
+                                    setFormData({
+                                      ...formData,
+                                      comparisonSection: { ...formData.comparisonSection, rightPoints: updated }
+                                    });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  comparisonSection: {
+                                    ...formData.comparisonSection,
+                                    rightPoints: [...(formData.comparisonSection.rightPoints || []), ""]
+                                  }
+                                });
+                              }}
+                              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Right Point
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 px-4 pt-4">
+                          Additional Content (Optional)
+                        </label>
+                        <Editor
+                          key="comparison-editor-unique"
+                          holder="comparison-editor"
+                          data={formData.comparisonSection.content}
+                          onChange={(data) => setFormData({
+                            ...formData,
+                            comparisonSection: { ...formData.comparisonSection, content: data }
+                          })}
+                          uploadEndpoint="/courses/images"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Benefits Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-blue-600" />
+                      Key Benefits Section
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.benefitsSection.show}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          benefitsSection: { ...formData.benefitsSection, show: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Visible</span>
+                    </label>
+                  </div>
+
+                  {formData.benefitsSection.show && (
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Section Title"
+                        value={formData.benefitsSection.title}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          benefitsSection: { ...formData.benefitsSection, title: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <Editor
+                          holder="benefits-editor"
+                          data={formData.benefitsSection.content}
+                          onChange={(data) => setFormData({
+                            ...formData,
+                            benefitsSection: { ...formData.benefitsSection, content: data }
+                          })}
+                          uploadEndpoint="/courses/images"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Key Benefits Points
+                        </label>
+                        <div className="space-y-2">
+                          {(formData.benefitsSection.points || [""]).map((point, index) => (
+                            <div key={index} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={point}
+                                onChange={(e) => {
+                                  const updated = [...(formData.benefitsSection.points || [""])];
+                                  updated[index] = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    benefitsSection: { ...formData.benefitsSection, points: updated }
+                                  });
+                                }}
+                                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                placeholder="Enter benefit point"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (formData.benefitsSection.points || [""]).filter((_, i) => i !== index);
+                                  setFormData({
+                                    ...formData,
+                                    benefitsSection: { ...formData.benefitsSection, points: updated }
+                                  });
+                                }}
+                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                benefitsSection: {
+                                  ...formData.benefitsSection,
+                                  points: [...(formData.benefitsSection.points || [""]), ""]
+                                }
+                              });
+                            }}
+                            className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Benefit Point
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Framework Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
+                      Learning Framework Section
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.frameworkSection.show}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          frameworkSection: { ...formData.frameworkSection, show: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Visible</span>
+                    </label>
+                  </div>
+
+                  {formData.frameworkSection.show && (
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Section Title (e.g., Making $2000/month is Easy)"
+                        value={formData.frameworkSection.title}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          frameworkSection: { ...formData.frameworkSection, title: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Subtitle (e.g., Exact Frameworks that works)"
+                        value={formData.frameworkSection.subtitle}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          frameworkSection: { ...formData.frameworkSection, subtitle: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Media URL (Image or Video)"
+                        value={formData.frameworkSection.media}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          frameworkSection: { ...formData.frameworkSection, media: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <Editor
+                          holder="framework-editor"
+                          data={formData.frameworkSection.description}
+                          onChange={(data) => setFormData({
+                            ...formData,
+                            frameworkSection: { ...formData.frameworkSection, description: data }
+                          })}
+                          uploadEndpoint="/courses/images"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Solution Section */}
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl border border-gray-200 dark:border-gray-800 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold flex items-center gap-2">
+                      <Target className="w-5 h-5 text-blue-600" />
+                      Solution Section (Pain Points)
+                    </h4>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.solutionSection.show}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          solutionSection: { ...formData.solutionSection, show: e.target.checked }
+                        })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Visible</span>
+                    </label>
+                  </div>
+
+                  {formData.solutionSection.show && (
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        placeholder="Section Title (e.g., Solve Your Biggest Problems)"
+                        value={formData.solutionSection.title}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          solutionSection: { ...formData.solutionSection, title: e.target.value }
+                        })}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 px-4 pt-4">
+                          Main Content
+                        </label>
+                        <Editor
+                          key="solution-editor-unique"
+                          holder="solution-editor"
+                          data={formData.solutionSection.content}
+                          onChange={(data) => setFormData({
+                            ...formData,
+                            solutionSection: { ...formData.solutionSection, content: data }
+                          })}
+                          uploadEndpoint="/courses/images"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Solution Points
+                        </label>
+                        <div className="space-y-2">
+                          {(formData.solutionSection.points || [""]).map((point, index) => (
+                            <div key={index} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={point}
+                                onChange={(e) => {
+                                  const updated = [...(formData.solutionSection.points || [""])];
+                                  updated[index] = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    solutionSection: { ...formData.solutionSection, points: updated }
+                                  });
+                                }}
+                                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                placeholder="Enter solution point"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (formData.solutionSection.points || [""]).filter((_, i) => i !== index);
+                                  setFormData({
+                                    ...formData,
+                                    solutionSection: { ...formData.solutionSection, points: updated }
+                                  });
+                                }}
+                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                solutionSection: {
+                                  ...formData.solutionSection,
+                                  points: [...(formData.solutionSection.points || [""]), ""]
+                                }
+                              });
+                            }}
+                            className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Solution Point
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

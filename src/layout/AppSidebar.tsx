@@ -18,7 +18,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { Files, Tag, UserCircle2Icon, Bell, MessageCircle } from "lucide-react";
+import { Files, Tag, UserCircle2Icon, Bell, MessageCircle, Bot } from "lucide-react";
 
 type NavSubItem = {
   name: string;
@@ -111,7 +111,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <Tag />,
-    name: "coupons",
+    name: "Coupons",
     path: "/coupons/all"
   },
   {
@@ -124,7 +124,11 @@ const navItems: NavItem[] = [
     name: "Testimonials",
     path: "/testimonials"
   },
-
+  {
+    icon: <Bot />,
+    name: "AI Tool",
+    path: "/ai-tool"
+  },
   {
     icon: <PieChartIcon />,
     name: "Leaderboard Settings",

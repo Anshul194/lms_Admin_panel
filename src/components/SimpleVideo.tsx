@@ -12,6 +12,7 @@ export default class SimpleVideo {
   input: HTMLInputElement | null;
   videoEl: HTMLVideoElement | null;
   previewBox: HTMLDivElement | null;
+  uploadEndpoint: string;
 
   static get toolbox() {
     return {
@@ -20,12 +21,14 @@ export default class SimpleVideo {
     };
   }
 
-  constructor({ data }: { data?: Record<string, unknown> }) {
+  constructor({ data, config }: { data?: Record<string, unknown>; config?: { uploadEndpoint?: string } }) {
     this.data = data || {};
     this.wrapper = null;
     this.input = null;
     this.videoEl = null;
     this.previewBox = null;
+    // Use config uploadEndpoint if provided, otherwise default to /news/content-video
+    this.uploadEndpoint = config?.uploadEndpoint || '/news/content-video';
   }
 
   render() {
@@ -97,15 +100,24 @@ export default class SimpleVideo {
         const formData = new FormData();
         formData.append("video", file);
 
-        // Get auth token from localStorage
+        // Get auth tokens from localStorage
         const token = localStorage.getItem("accessToken");
+        const refreshToken = localStorage.getItem("refreshToken");
         const headers: HeadersInit = {};
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
           headers["x-access-token"] = token;
         }
+        if (refreshToken) {
+          headers["x-refresh-token"] = refreshToken;
+        }
 
-        const res = await fetch(`${API_BASE_URL}/news/content-video`, {
+        // Use the configured upload endpoint
+        const endpoint = this.uploadEndpoint.startsWith('/') 
+          ? this.uploadEndpoint 
+          : `/${this.uploadEndpoint}`;
+        
+        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
           method: "POST",
           headers: headers,
           body: formData,

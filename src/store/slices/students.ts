@@ -309,7 +309,7 @@ export const enrollStudent = createAsyncThunk<
     );
   }
 })
-;
+  ;
 
 export const deleteEnrollment = createAsyncThunk<
   string,
@@ -337,6 +337,31 @@ export const deleteEnrollment = createAsyncThunk<
     }
   }
 );
+
+export const updateAccessExpiry = createAsyncThunk<
+  any,
+  { enrollmentId: string; accessExpiry: string | null },
+  { rejectValue: string }
+>("students/updateAccessExpiry", async ({ enrollmentId, accessExpiry }, { rejectWithValue }) => {
+  try {
+    const token = localStorage.getItem("token") || "";
+    const response = await axiosInstance.put(
+      `/enrollment/${enrollmentId}/access-expiry`,
+      { accessExpiry },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || error.message || "Failed to update access expiry"
+    );
+  }
+});
 
 export const logoutAllSessions = createAsyncThunk<
   { userId: string },
@@ -506,11 +531,11 @@ const studentSlice = createSlice({
         state.students = state.students.map((student) =>
           student._id === action.payload.userId
             ? {
-                ...student,
-                status: action.payload.banType,
-                banReason: action.payload.banReason,
-                isActive: false,
-              }
+              ...student,
+              status: action.payload.banType,
+              banReason: action.payload.banReason,
+              isActive: false,
+            }
             : student
         );
         // Update details if present
@@ -540,11 +565,11 @@ const studentSlice = createSlice({
         state.students = state.students.map((student) =>
           student._id === action.payload.userId
             ? {
-                ...student,
-                status: "active",
-                banReason: undefined,
-                isActive: true,
-              }
+              ...student,
+              status: "active",
+              banReason: undefined,
+              isActive: true,
+            }
             : student
         );
         // Update details if present
@@ -612,7 +637,7 @@ const studentSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
-      
+
   },
 });
 

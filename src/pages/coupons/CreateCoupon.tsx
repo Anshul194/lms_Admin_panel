@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch } from "../../hooks/redux";
 import { createCoupon } from "../../store/slices/couponsSlice";
-import { CheckCircle, XCircle } from "lucide-react";
+import { fetchCourses } from "../../store/slices/course";
+import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 
 const CreateCoupon: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -20,7 +21,11 @@ const CreateCoupon: React.FC = () => {
     isActive: true,
     startDate: "",
     endDate: "",
+    courseId: "", // Selected course ID
   });
+
+  const [courses, setCourses] = useState<any[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [popup, setPopup] = useState<{
@@ -29,6 +34,28 @@ const CreateCoupon: React.FC = () => {
     title: string;
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
+
+  // Fetch courses on component mount (non-blocking - don't fail if courses can't be loaded)
+  useEffect(() => {
+    const loadCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        // Use smaller limit to avoid parsing issues
+        const result = await dispatch(fetchCourses({ page: 1, limit: 100 })).unwrap();
+        if (result?.courses && Array.isArray(result.courses)) {
+          setCourses(result.courses);
+        }
+      } catch (error: any) {
+        console.error("Failed to fetch courses:", error);
+        // Don't show error to user - course dropdown is optional
+        // Just set empty array so dropdown still works
+        setCourses([]);
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    loadCourses();
+  }, [dispatch]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -53,6 +80,14 @@ const CreateCoupon: React.FC = () => {
     } else {
       payload.discountAmount = undefined;
     }
+
+    // Convert courseId to applicableCourses array format
+    if (formData.courseId) {
+      payload.applicableCourses = [formData.courseId];
+    } else {
+      payload.applicableCourses = [];
+    }
+    delete payload.courseId; // Remove courseId from payload as backend expects applicableCourses
 
     try {
       await dispatch(createCoupon(payload)).unwrap();
@@ -199,6 +234,36 @@ const CreateCoupon: React.FC = () => {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white/90"
             />
           </div>
+        </div>
+
+        {/* Course Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-white/90 mb-2">
+            <BookOpen className="w-4 h-4 inline mr-1" />
+            Apply to Course (Optional)
+          </label>
+          <select
+            name="courseId"
+            value={formData.courseId}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white/90 focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">All Courses (Apply to any course)</option>
+            {coursesLoading ? (
+              <option disabled>Loading courses...</option>
+            ) : (
+              courses.map((course) => (
+                <option key={course._id} value={course._id}>
+                  {course.title}
+                </option>
+              ))
+            )}
+          </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {formData.courseId
+              ? "This coupon will only be applicable to the selected course."
+              : "Leave empty to make this coupon applicable to all courses."}
+          </p>
         </div>
 
         {/* Dates */}

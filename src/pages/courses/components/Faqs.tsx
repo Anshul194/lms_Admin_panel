@@ -12,6 +12,7 @@ function Faqs({ courseId }) {
   const [faqData, setFaqData] = React.useState({
     question: "",
     answer: "",
+    category: "course",
   });
   const [popup, setPopup] = useState<{
     message: string;
@@ -41,6 +42,7 @@ function Faqs({ courseId }) {
         const payload: any = {
           question: selectedFaq.question,
           answer: selectedFaq.answer,
+          category: selectedFaq.category || "course",
         };
         const response = await axiosInstance.put(
           `/faqs/${selectedFaq._id}`,
@@ -62,6 +64,7 @@ function Faqs({ courseId }) {
           courseId: courseId || "",
           question: selectedFaq ? selectedFaq.question : faqData.question,
           answer: selectedFaq ? selectedFaq.answer : faqData.answer,
+          category: selectedFaq ? (selectedFaq.category || "course") : (faqData.category || "course"),
         };
         const response = await axiosInstance.post("/faqs", payload);
         setPopup({
@@ -75,6 +78,7 @@ function Faqs({ courseId }) {
         setFaqData({
           question: "",
           answer: "",
+          category: "course",
         });
       }
       getFaqs();
@@ -156,6 +160,30 @@ function Faqs({ courseId }) {
             <div className="grid md:grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium dark:text-white/90 text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={selectedFaq ? (selectedFaq?.category || "course") : (faqData?.category || "course")}
+                  onChange={(e) =>
+                    selectedFaq
+                      ? setSelectedFaq({
+                          ...selectedFaq,
+                          category: e.target.value,
+                        })
+                      : setFaqData({
+                          ...faqData,
+                          category: e.target.value,
+                        })
+                  }
+                  className="w-full px-4 py-3 border dark:text-white/70 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                >
+                  <option value="course">Course</option>
+                  <option value="purchase">Purchase</option>
+                  <option value="technical">Technical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium dark:text-white/90 text-gray-700 mb-2">
                   Question *
                 </label>
                 <input
@@ -176,7 +204,7 @@ function Faqs({ courseId }) {
                         })
                   }
                   className="w-full px-4 py-3 border dark:text-white/70 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  placeholder="e.g., Basic, Pro, Enterprise"
+                  placeholder="Enter your question"
                 />
               </div>
               <div>
@@ -200,7 +228,7 @@ function Faqs({ courseId }) {
                         })
                   }
                   className="w-full px-4 py-3 border dark:text-white/70 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  placeholder="e.g., Basic, Pro, Enterprise"
+                  placeholder="Enter the answer"
                 />
               </div>
             </div>
@@ -262,6 +290,7 @@ function Faqs({ courseId }) {
                     setFaqData({
                       question: faq.question,
                       answer: faq.answer,
+                      category: faq.category || "course",
                     });
                   }}
                 >

@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
-import { fetchCouponById, updateCoupon } from "../../store/slices/couponsSlice";
-import { CheckCircle, XCircle } from "lucide-react";
+import { fetchCouponById, updateCoupon, clearData } from "../../store/slices/couponsSlice";
+import { fetchCourses } from "../../store/slices/course";
+import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 
 const EditCoupon: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  console.log("EditCoupon component rendered");
+  const { couponId } = useParams<{ couponId: string }>();
+  const id = couponId; // Use couponId from route params
+  console.log("Coupon ID from params:", id);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { singleCoupon, loading } = useAppSelector((state) => state.coupons);
+  const { singleCoupon, loading, error: couponError } = useAppSelector((state) => state.coupons);
+  console.log("Redux state - loading:", loading, "singleCoupon:", singleCoupon, "error:", couponError);
 
   const [formData, setFormData] = useState({
     code: "",
@@ -22,7 +27,11 @@ const EditCoupon: React.FC = () => {
     isActive: true,
     startDate: "",
     endDate: "",
+    courseId: "", // Selected course ID
   });
+
+  const [courses, setCourses] = useState<any[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
 
   const [popup, setPopup] = useState<{
     show: boolean;
@@ -31,27 +40,132 @@ const EditCoupon: React.FC = () => {
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
 
-  // Fetch coupon details on mount
+  // Fetch coupon details on mount and when id changes
   useEffect(() => {
-    if (id) dispatch(fetchCouponById(id));
+    let isMounted = true;
+    
+    if (id) {
+      console.log("Fetching coupon with ID:", id);
+      // Clear previous coupon data first
+      dispatch(clearData());
+      setFormData({
+        code: "",
+        description: "",
+        discountType: "flat",
+        discountAmount: 0,
+        discountPercent: 0,
+        minOrderAmount: 0,
+        usageLimit: 0,
+        usageLimitPerUser: 0,
+        isActive: true,
+        startDate: "",
+        endDate: "",
+        courseId: "",
+      });
+      
+      dispatch(fetchCouponById(id))
+        .unwrap()
+        .then((result) => {
+          if (isMounted) {
+            console.log("Coupon fetch result:", result);
+            console.log("Coupon data:", result?.data?.coupon || result);
+          }
+        })
+        .catch((error) => {
+          if (isMounted) {
+            console.error("Coupon fetch error:", error);
+          }
+        });
+    }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [id, dispatch]);
+
+  // Fetch courses on component mount (non-blocking - don't fail if courses can't be loaded)
+  useEffect(() => {
+    const loadCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        // Use smaller limit to avoid parsing issues
+        const result = await dispatch(fetchCourses({ page: 1, limit: 100 })).unwrap();
+        if (result?.courses && Array.isArray(result.courses)) {
+          setCourses(result.courses);
+        }
+      } catch (error: any) {
+        console.error("Failed to fetch courses:", error);
+        // Don't show error to user - course dropdown is optional
+        // Just set empty array so dropdown still works
+        setCourses([]);
+      } finally {
+        setCoursesLoading(false);
+      }
+    };
+    loadCourses();
+  }, [dispatch]);
 
   // Populate form when coupon is loaded
   useEffect(() => {
-    if (singleCoupon) {
-      setFormData({
-        code: singleCoupon.code,
-        description: singleCoupon.description,
+    if (singleCoupon && singleCoupon._id) {
+      console.log("Single coupon data:", singleCoupon);
+      console.log("Coupon code:", singleCoupon.code);
+      console.log("Coupon description:", singleCoupon.description);
+      
+      // Helper function to get number value (handles Decimal128, string, number)
+      const getNumber = (val: any): number => {
+        if (!val && val !== 0) return 0;
+        if (typeof val === "number") return val;
+        if (typeof val === "string") return parseFloat(val) || 0;
+        if (typeof val === "object" && val.$numberDecimal) return parseFloat(val.$numberDecimal);
+        if (typeof val === "object" && Object.values(val).length > 0) {
+          return parseFloat(Object.values(val)[0] as string) || 0;
+        }
+        return 0;
+      };
+      
+      // Get first course from applicableCourses array if exists
+      let courseId = "";
+      if ((singleCoupon as any).applicableCourses && 
+          Array.isArray((singleCoupon as any).applicableCourses) && 
+          (singleCoupon as any).applicableCourses.length > 0) {
+        const firstCourse = (singleCoupon as any).applicableCourses[0];
+        // Handle both string and ObjectId formats
+        courseId = typeof firstCourse === 'string' ? firstCourse : (firstCourse._id || firstCourse.toString());
+      }
+      
+      // Format dates
+      const formatDate = (date: any): string => {
+        if (!date) return "";
+        if (typeof date === 'string') {
+          return date.split("T")[0];
+        }
+        try {
+          return new Date(date).toISOString().split("T")[0];
+        } catch (e) {
+          return "";
+        }
+      };
+      
+      const newFormData = {
+        code: singleCoupon.code || "",
+        description: singleCoupon.description || "",
         discountType: singleCoupon.discountType === "percentage" ? "percent" : "flat",
-        discountAmount: singleCoupon.discountAmount || 0,
-        discountPercent: singleCoupon.discountPercent || 0,
-        minOrderAmount: singleCoupon.minOrderAmount,
-        usageLimit: singleCoupon.usageLimit,
-        usageLimitPerUser: singleCoupon.usageLimitPerUser,
-        isActive: singleCoupon.isActive,
-        startDate: singleCoupon.startDate?.split("T")[0] || "",
-        endDate: singleCoupon.endDate?.split("T")[0] || "",
-      });
+        discountAmount: getNumber(singleCoupon.discountAmount),
+        discountPercent: getNumber(singleCoupon.discountPercent),
+        minOrderAmount: getNumber(singleCoupon.minOrderAmount),
+        usageLimit: getNumber(singleCoupon.usageLimit),
+        usageLimitPerUser: getNumber(singleCoupon.usageLimitPerUser),
+        isActive: singleCoupon.isActive !== undefined ? singleCoupon.isActive : true,
+        startDate: formatDate(singleCoupon.startDate),
+        endDate: formatDate(singleCoupon.endDate),
+        courseId: courseId,
+      };
+      
+      console.log("Setting form data:", newFormData);
+      setFormData(newFormData);
+    } else {
+      console.log("No coupon data available. singleCoupon:", singleCoupon);
     }
   }, [singleCoupon]);
 
@@ -79,6 +193,14 @@ const EditCoupon: React.FC = () => {
       payload.discountAmount = undefined;
     }
 
+    // Convert courseId to applicableCourses array format
+    if (formData.courseId) {
+      payload.applicableCourses = [formData.courseId];
+    } else {
+      payload.applicableCourses = [];
+    }
+    delete payload.courseId; // Remove courseId from payload as backend expects applicableCourses
+
     try {
       await dispatch(updateCoupon({ id, couponData: payload })).unwrap();
       setPopup({
@@ -99,18 +221,65 @@ const EditCoupon: React.FC = () => {
     }
   };
 
+  // Debug: Log current form data
+  useEffect(() => {
+    console.log("Current formData:", formData);
+    console.log("Loading state:", loading);
+    console.log("Single coupon:", singleCoupon);
+    console.log("Coupon error:", couponError);
+  }, [formData, loading, singleCoupon, couponError]);
+
+  // Show loading state only if actively loading and no data
   if (loading && !singleCoupon) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500 dark:text-gray-300">Loading coupon...</p>
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-300">Loading coupon...</p>
+        </div>
       </div>
     );
   }
 
+  // Show error state only if there's an error and no data
+  if (couponError && !singleCoupon && !loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-500 dark:text-red-400 mb-4">{couponError}</p>
+          <button
+            onClick={() => navigate("/coupons/all")}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Back to Coupons
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Always render the form, even if data is still loading
   return (
     <div className="mx-auto p-6 bg-white dark:bg-white/[0.03] shadow-lg rounded-lg max-w-4xl">
+      {loading && !singleCoupon && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p className="text-blue-600 dark:text-blue-400">Loading coupon data...</p>
+        </div>
+      )}
+      {couponError && !singleCoupon && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <p className="text-red-600 dark:text-red-400">Error: {couponError}</p>
+          <button
+            onClick={() => navigate("/coupons/all")}
+            className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Back to Coupons
+          </button>
+        </div>
+      )}
       <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white/90">
-        Edit Coupon
+        Edit Coupon {id ? `(${id})` : ''}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -228,6 +397,36 @@ const EditCoupon: React.FC = () => {
               className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white/90"
             />
           </div>
+        </div>
+
+        {/* Course Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-white/90 mb-2">
+            <BookOpen className="w-4 h-4 inline mr-1" />
+            Apply to Course (Optional)
+          </label>
+          <select
+            name="courseId"
+            value={formData.courseId}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white/90 focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">All Courses (Apply to any course)</option>
+            {coursesLoading ? (
+              <option disabled>Loading courses...</option>
+            ) : (
+              courses.map((course) => (
+                <option key={course._id} value={course._id}>
+                  {course.title}
+                </option>
+              ))
+            )}
+          </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {formData.courseId
+              ? "This coupon will only be applicable to the selected course."
+              : "Leave empty to make this coupon applicable to all courses."}
+          </p>
         </div>
 
         {/* Dates */}

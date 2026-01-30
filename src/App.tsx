@@ -70,6 +70,7 @@ import AddNews from "./pages/News/AddNews";
 import EditNews from "./pages/News/EditNews";
 import ViewNews from "./pages/News/ViewNews";
 import ManageQuestions from "./pages/PersonalityTest/ManageQuestions";
+import AITool from "./pages/AITool/AITool";
 
 // Lazy load pages
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
@@ -226,6 +227,7 @@ export default function App() {
               />
 
               <Route path="/forum" element={<ForumThreadList />} />
+              <Route path="/forum/create" element={<EditForumThread />} />
               <Route path="/forum/:threadId" element={<ForumDetails />} />
               <Route path="/forum/edit/:threadId" element={<EditForumThread />} />
 
@@ -260,6 +262,7 @@ export default function App() {
               />
 
               {/* Coupons */}
+              <Route path="/coupons" element={<Navigate to="/coupons/all" replace />} />
               <Route path="/coupons/all" element={<Coupons />} />
               <Route path="/coupons/add" element={<CreateCoupon />} />
               <Route path="/coupons/edit/:couponId" element={<EditCoupon />} />
@@ -316,6 +319,7 @@ export default function App() {
               <Route path="/device-approvals" element={<DeviceApprovals />} />
               {/* Testimonials */}
               <Route path="/testimonials" element={<TestimonialsPage />} />
+              <Route path="/ai-tool" element={<AITool />} />
               {/* Charts */}
               <Route path="/line-chart" element={<LineChart />} />
               <Route path="/bar-chart" element={<BarChart />} />

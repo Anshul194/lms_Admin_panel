@@ -280,6 +280,11 @@ const Coupons: React.FC = () => {
   const { data, loading, error, pagination, searchQuery, filters } = useSelector(
     (state: RootState) => state.coupons
   );
+  
+  // Use a more specific selector for coupons to ensure re-renders
+  const couponsFromState = useSelector(
+    (state: RootState) => state.coupons.data?.data?.coupons || []
+  );
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [usageModalOpen, setUsageModalOpen] = useState(false);
@@ -381,27 +386,29 @@ const Coupons: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (couponToDelete) {
       setIsDeleting(true);
+      const couponId = couponToDelete._id;
+      const couponCode = couponToDelete.code;
+      
       try {
-        await dispatch(deleteCoupon(couponToDelete._id)).unwrap();
+        console.log("Deleting coupon:", couponId, couponCode);
+        const result = await dispatch(deleteCoupon(couponId)).unwrap();
+        console.log("Delete result:", result);
+        
         setPopup({
-          message: `Coupon "${couponToDelete.code}" deleted successfully`,
+          message: `Coupon "${couponCode}" deleted successfully`,
           type: "success",
           isVisible: true,
         });
         closeDeleteModal();
-        // Refresh the current page
-        dispatch(
-          fetchCoupons({
-            page: pagination.page,
-            limit: pagination.limit,
-            filters: localFilters,
-            searchFields: searchQuery ? { code: searchQuery, description: searchQuery } : {},
-            sort: { createdAt: "desc" },
-          })
-        );
-      } catch (error) {
+        
+        // Don't refetch immediately - rely on Redux state update
+        // The reducer already removes the coupon from state
+        // Only refetch if we need to sync with server (e.g., after a delay)
+        // This prevents overwriting the optimistic update
+      } catch (error: any) {
+        console.error("Delete error:", error);
         setPopup({
-          message: "Failed to delete coupon. Please try again.",
+          message: error || "Failed to delete coupon. Please try again.",
           type: "error",
           isVisible: true,
         });
@@ -452,7 +459,14 @@ const Coupons: React.FC = () => {
     return pages;
   };
 
-  const coupons = data?.data?.coupons || [];
+  // Use the specific selector to ensure re-renders on changes
+  const coupons = couponsFromState;
+  
+  // Debug: Log when coupons array changes
+  useEffect(() => {
+    console.log("Coupons list updated. Count:", coupons.length);
+    console.log("Coupon IDs:", coupons.map(c => c._id));
+  }, [coupons]);
 
   return (
     <div>
@@ -650,6 +664,13 @@ const Coupons: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => navigate(`/coupons/edit/${coupon._id}`)}
+                            className="text-indigo-500 hover:text-indigo-700 transition-colors p-1"
+                            title="Edit coupon"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
                           <button
                             onClick={() => openUsageModal(coupon)}
                             className="text-blue-500 hover:text-blue-700 transition-colors p-1"
