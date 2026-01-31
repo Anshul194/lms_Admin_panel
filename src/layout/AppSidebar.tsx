@@ -95,6 +95,11 @@ const navItems: NavItem[] = [
 
   },
   {
+    icon: <UserCircleIcon />,
+    name: "Add Reporter",
+    path: "/reporters/add",
+  },
+  {
     icon: <TableIcon />,
     name: "Assignment Submissions",
     path: "/assignments/submissions"
