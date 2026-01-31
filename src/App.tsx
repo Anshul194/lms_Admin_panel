@@ -93,6 +93,7 @@ const AddCategory = lazy(() => import("./pages/AddCategory"));
 const CategoryList = lazy(() => import("./pages/CategoryList"));
 const AppLayout = lazy(() => import("./layout/AppLayout"));
 const Home = lazy(() => import("./pages/Dashboard/Home"));
+const AddReporter = lazy(() => import("./pages/Reporters/AddReporter"));
 const CreateCertificateTemplate = lazy(
   () => import("./pages/Certification/CreateCertificateTemplate")
 );
@@ -200,6 +201,9 @@ export default function App() {
                 path="/courses/text-courses/:lessonId"
                 element={<EditTextLessonEditor />}
               />
+
+
+<Route path="/reporters/add" element={<AddReporter />} />
 
               {/* Bundles */}
               <Route path="/bundles/create" element={<AddBundle />} />
