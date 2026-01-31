@@ -845,7 +845,15 @@ const RequestList: React.FC = () => {
                                 {currentTickets.map((ticket, idx) => {
                                     const userStats = userAnalytics.get(ticket.userId?._id);
                                     return (
-                                        <tr key={ticket._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <tr 
+                                            key={ticket._id} 
+                                            className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                            onClick={() => {
+                                                if (ticket.userId?._id) {
+                                                    navigate(`/students/${ticket.userId._id}`);
+                                                }
+                                            }}
+                                        >
                                             <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                                                 {isSearching 
                                                     ? (page - 1) * (pagination.limit || 10) + idx + 1
@@ -873,7 +881,10 @@ const RequestList: React.FC = () => {
                                                                     </span>
                                                                 )}
                                                                 <button
-                                                                    onClick={() => handleViewUserTickets(ticket.userId._id)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleViewUserTickets(ticket.userId._id);
+                                                                    }}
                                                                     className="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
                                                                 >
                                                                     View All
@@ -883,7 +894,10 @@ const RequestList: React.FC = () => {
                                                     </div>
                                                     {ticket.userId?._id && (
                                                         <button
-                                                            onClick={() => handleViewUserProfile(ticket.userId._id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/students/${ticket.userId._id}`);
+                                                            }}
                                                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 ml-2"
                                                             title="View User Profile"
                                                         >
@@ -932,14 +946,20 @@ const RequestList: React.FC = () => {
                                             <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => navigate(`/support-tickets/view/${ticket._id}`)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/support-tickets/view/${ticket._id}`);
+                                                        }}
                                                         className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
                                                         title="View Ticket"
                                                     >
                                                         <Eye className="w-5 h-5" />
                                                     </button>
                                                     <button
-                                                        onClick={() => navigate(`/support-tickets/edit/${ticket._id}`)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/support-tickets/edit/${ticket._id}`);
+                                                        }}
                                                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                                         title="Edit Ticket"
                                                     >
