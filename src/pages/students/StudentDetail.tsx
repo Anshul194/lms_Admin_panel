@@ -767,7 +767,14 @@ function StudentDetail() {
 
             {Array.isArray(data.enrollments) && data.enrollments.length > 0 && Object.keys(data.enrollments[0]).length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {data.enrollments.map((enrollment, index) => (
+                {[...data.enrollments]
+                  .sort((a, b) => {
+                    // Sort by enrollment date (most recent first)
+                    const dateA = a.enrolledAt ? new Date(a.enrolledAt).getTime() : 0;
+                    const dateB = b.enrolledAt ? new Date(b.enrolledAt).getTime() : 0;
+                    return dateB - dateA; // Descending order (newest first)
+                  })
+                  .map((enrollment, index) => (
                   <div
                     key={index}
                     className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
