@@ -49,6 +49,7 @@ import EnrollStudentPopup from "../../components/students/EnrollStudentPopup";
 import StudentAnalyticsTab from "./StudentAnalyticsTab";
 import { getStudentForumPosts, getStudentForumReplies, getStudentJobPosts } from "../../services/studentActivityService";
 import axiosInstance from "../../services/axiosConfig";
+import { downloadCertificateByUserAndCourse } from "../../utils/certificateDownload";
 
 const ImageUrl = import.meta.env.VITE_IMAGE_URL;
 
@@ -903,10 +904,31 @@ function StudentDetail() {
                           <ArrowRight className="w-4 h-4 ml-1" />
                         </a>
                         {enrollment.certificateIssued && (
-                          <span className="inline-flex items-center text-sm text-green-600">
-                            <Award className="w-4 h-4 mr-1" />
-                            Certified
-                          </span>
+                          <div className="inline-flex items-center gap-2">
+                            <span className="inline-flex items-center text-sm text-green-600">
+                              <Award className="w-4 h-4 mr-1" />
+                              Certified
+                            </span>
+                            <button
+                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium hover:bg-blue-200 transition-colors"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (data?._id && enrollment.course?._id) {
+                                  await downloadCertificateByUserAndCourse(
+                                    dispatch,
+                                    data._id,
+                                    enrollment.course._id,
+                                    `certificate-${enrollment.course?.title || "course"}.pdf`
+                                  );
+                                }
+                              }}
+                              title="Download Certificate"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Download
+                            </button>
+                          </div>
                         )}
 
                         {/* Add enrolledAt and accessExpiry */}
