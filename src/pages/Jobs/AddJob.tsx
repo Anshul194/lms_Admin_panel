@@ -69,6 +69,16 @@ const AddJob: React.FC = () => {
     },
   });
 
+  // Reset currency if mode changes from full-time
+  React.useEffect(() => {
+    if (formData.mode !== "full-time" && formData.budget.currency === "LPA") {
+      setFormData((prev) => ({
+        ...prev,
+        budget: { ...prev.budget, currency: "INR" },
+      }));
+    }
+  }, [formData.mode]);
+
   const [newSkill, setNewSkill] = useState("");
 
   const handleInputChange = (
@@ -109,8 +119,8 @@ const AddJob: React.FC = () => {
           type === "number"
             ? Number(value)
             : type === "checkbox"
-            ? (e.target as HTMLInputElement).checked
-            : value,
+              ? (e.target as HTMLInputElement).checked
+              : value,
       }));
     }
   };
@@ -419,6 +429,7 @@ const AddJob: React.FC = () => {
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                     <option value="GBP">GBP</option>
+                    {formData.mode === "full-time" && <option value="LPA">LPA</option>}
                   </select>
                 </div>
               </div>
@@ -465,45 +476,47 @@ const AddJob: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                Duration
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Duration Value *
-                  </label>
-                  <input
-                    type="number"
-                    name="estimatedDuration.value"
-                    value={formData.estimatedDuration.value}
-                    onChange={handleInputChange}
-                    min="1"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {formData.mode !== "full-time" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  Duration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                      Duration Value *
+                    </label>
+                    <input
+                      type="number"
+                      name="estimatedDuration.value"
+                      value={formData.estimatedDuration.value}
+                      onChange={handleInputChange}
+                      min="1"
+                      required={formData.mode !== "full-time"}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                    Duration Unit *
-                  </label>
-                  <select
-                    name="estimatedDuration.unit"
-                    value={formData.estimatedDuration.unit}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="hours">Hours</option>
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                      Duration Unit *
+                    </label>
+                    <select
+                      name="estimatedDuration.unit"
+                      value={formData.estimatedDuration.unit}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="hours">Hours</option>
+                      <option value="days">Days</option>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -627,8 +640,8 @@ const AddJob: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
-      </div>
+        </div >
+      </div >
     </>
   );
 };

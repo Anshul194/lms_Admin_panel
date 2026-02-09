@@ -99,20 +99,34 @@ const JobList: React.FC = () => {
     setShowProposals(true);
   };
 
-  const formatCurrency = (amount: number, currency?: string) => {
-    // Default to USD if currency is undefined, null, or empty
-    const currencyCode = currency && currency.trim() ? currency : "INR";
-    try {
-      return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: currencyCode,
-        minimumFractionDigits: 0,
-      }).format(amount);
-    } catch (error) {
-      console.error("Currency formatting error:", error);
-      // Fallback to basic formatting with USD symbol if an error occurs
-      return `$${amount.toLocaleString()}`;
+  // Helper to format budget with LPA logic
+  const formatBudget = (budget: { min: number; max: number; currency: string }) => {
+    const { min, max, currency } = budget;
+
+    if (currency === "LPA") {
+      if (min === max) {
+        return `₹ ${min} LPA`;
+      }
+      return `₹ ${min} - ${max} LPA`;
     }
+
+    // Auto-convert INR to LPA if > 100,000
+    if (currency === "INR" && min >= 100000) {
+      const minL = min.toLocaleString('en-IN');
+      const maxL = max.toLocaleString('en-IN');
+
+      if (minL === maxL) {
+        return `₹ ${minL} LPA`;
+      }
+      return `₹ ${minL} LPA - ${maxL} LPA`;
+    }
+
+    const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
+
+    if (min === max) {
+      return `${currencySymbol} ${min.toLocaleString()}`;
+    }
+    return `${currencySymbol} ${min.toLocaleString()} - ${max.toLocaleString()}`;
   };
 
   const getStatusColor = (status: boolean) => {
@@ -456,21 +470,20 @@ const JobList: React.FC = () => {
                       {job.category}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {formatCurrency(job.budget.min, job.budget.currency)} -{" "}
-                      {formatCurrency(job.budget.max, job.budget.currency)}
+                      {formatBudget(job.budget)}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.location.type === "remote"
                         ? "Remote"
                         : typeof job.location.address === "string"
-                        ? job.location.address
-                        : job.location.address?.street || "On-site"}
+                          ? job.location.address
+                          : job.location.address?.street || "On-site"}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {getExperienceLevelText(job.experienceLevel)}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {job.estimatedDuration.value} {job.estimatedDuration.unit}
+                      {job.mode === "full-time" ? "-" : `${job.estimatedDuration.value} ${job.estimatedDuration.unit}`}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.skillsRequired.length > 0
@@ -521,22 +534,20 @@ const JobList: React.FC = () => {
                       </button>
                       {/* Approve/Reject buttons always visible */}
                       <button
-                        className={`p-2 rounded ${
-                          job.isAdminApproved
+                        className={`p-2 rounded ${job.isAdminApproved
                             ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
                             : "bg-green-600 text-white hover:bg-green-700"
-                        } disabled:opacity-50`}
+                          } disabled:opacity-50`}
                         disabled={approvingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, true)}
                       >
                         {approvingJobId === job._id ? "Approving..." : "Approve"}
                       </button>
                       <button
-                        className={`p-2 rounded ${
-                          job.isAdminApproved === false
+                        className={`p-2 rounded ${job.isAdminApproved === false
                             ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
                             : "bg-red-600 text-white hover:bg-red-700"
-                        } disabled:opacity-50`}
+                          } disabled:opacity-50`}
                         disabled={rejectingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, false)}
                       >
@@ -585,11 +596,10 @@ const JobList: React.FC = () => {
               <button
                 key={idx}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded ${
-                  pagination.page === pageNum
+                className={`px-3 py-1 rounded ${pagination.page === pageNum
                     ? "bg-indigo-500 text-white"
                     : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 {pageNum}
               </button>
