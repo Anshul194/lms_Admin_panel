@@ -100,8 +100,21 @@ const JobList: React.FC = () => {
   };
 
   // Helper to format budget with LPA logic
-  const formatBudget = (budget: { min: number; max: number; currency: string }) => {
+  const formatBudget = (budget: { min: number; max: number; currency: string }, mode?: string) => {
     const { min, max, currency } = budget;
+
+    if (mode === "full-time") {
+      if (currency === "LPA") return `₹ ${max} LPA`;
+      if (currency === "INR" || currency === "₹") {
+        if (max >= 100000) {
+          const maxL = (max / 100000).toFixed(1).replace(/\.0$/, '');
+          return `₹ ${maxL} LPA`;
+        }
+        return `₹ ${max.toLocaleString('en-IN')}`;
+      }
+      const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
+      return `${symbol} ${max.toLocaleString()}`;
+    }
 
     if (currency === "LPA") {
       if (min === max) {
@@ -111,14 +124,14 @@ const JobList: React.FC = () => {
     }
 
     // Auto-convert INR to LPA if > 100,000
-    if (currency === "INR" && min >= 100000) {
-      const minL = min.toLocaleString('en-IN');
-      const maxL = max.toLocaleString('en-IN');
+    if ((currency === "INR" || currency === "₹") && min >= 100000) {
+      const minL = (min / 100000).toFixed(1).replace(/\.0$/, '');
+      const maxL = (max / 100000).toFixed(1).replace(/\.0$/, '');
 
       if (minL === maxL) {
         return `₹ ${minL} LPA`;
       }
-      return `₹ ${minL} LPA - ${maxL} LPA`;
+      return `₹ ${minL} - ${maxL} LPA`;
     }
 
     const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
@@ -470,7 +483,7 @@ const JobList: React.FC = () => {
                       {job.category}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {formatBudget(job.budget)}
+                      {formatBudget(job.budget, job.mode)}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.location.type === "remote"
@@ -535,8 +548,8 @@ const JobList: React.FC = () => {
                       {/* Approve/Reject buttons always visible */}
                       <button
                         className={`p-2 rounded ${job.isAdminApproved
-                            ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                            : "bg-green-600 text-white hover:bg-green-700"
+                          ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                          : "bg-green-600 text-white hover:bg-green-700"
                           } disabled:opacity-50`}
                         disabled={approvingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, true)}
@@ -545,8 +558,8 @@ const JobList: React.FC = () => {
                       </button>
                       <button
                         className={`p-2 rounded ${job.isAdminApproved === false
-                            ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                            : "bg-red-600 text-white hover:bg-red-700"
+                          ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                          : "bg-red-600 text-white hover:bg-red-700"
                           } disabled:opacity-50`}
                         disabled={rejectingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, false)}
@@ -597,8 +610,8 @@ const JobList: React.FC = () => {
                 key={idx}
                 onClick={() => handlePageChange(pageNum)}
                 className={`px-3 py-1 rounded ${pagination.page === pageNum
-                    ? "bg-indigo-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-indigo-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
               >
                 {pageNum}
