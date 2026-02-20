@@ -109,8 +109,8 @@ const AddJob: React.FC = () => {
           type === "number"
             ? Number(value)
             : type === "checkbox"
-            ? (e.target as HTMLInputElement).checked
-            : value,
+              ? (e.target as HTMLInputElement).checked
+              : value,
       }));
     }
   };
@@ -325,13 +325,13 @@ const AddJob: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Category</option>
-                    <option value="technology">Technology</option>
-                    <option value="design">Design</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="sales">Sales</option>
-                    <option value="finance">Finance</option>
-                    <option value="hr">Human Resources</option>
-                    <option value="other">Other</option>
+                    <option value="Design & Branding">Design & Branding</option>
+                    <option value="Content & Copywriting">Content & Copywriting</option>
+                    <option value="Video & Audio">Video & Audio</option>
+                    <option value="Marketing & Growth">Marketing & Growth</option>
+                    <option value="Tech & Website">Tech & Website</option>
+                    <option value="Sales & Client Work">Sales & Client Work</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
 
@@ -428,6 +428,14 @@ const AddJob: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Budget Range
               </h3>
+              {formData.mode === "full-time" && formData.budget.currency === "INR" && (
+                <div className="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-3 rounded">
+                  <p className="text-sm text-blue-700 dark:text-blue-200">
+                    Note: For full-time INR jobs, please enter the budget in <strong>LPA (Lakhs Per Annum)</strong>.
+                    For example, enter 5 for 5 LPA.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">

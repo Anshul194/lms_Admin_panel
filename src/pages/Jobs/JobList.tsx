@@ -339,13 +339,13 @@ const JobList: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Categories</option>
-                <option value="technology">Technology</option>
-                <option value="design">Design</option>
-                <option value="marketing">Marketing</option>
-                <option value="sales">Sales</option>
-                <option value="finance">Finance</option>
-                <option value="hr">Human Resources</option>
-                <option value="other">Other</option>
+                <option value="Design & Branding">Design & Branding</option>
+                <option value="Content & Copywriting">Content & Copywriting</option>
+                <option value="Video & Audio">Video & Audio</option>
+                <option value="Marketing & Growth">Marketing & Growth</option>
+                <option value="Tech & Website">Tech & Website</option>
+                <option value="Sales & Client Work">Sales & Client Work</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
@@ -390,9 +390,9 @@ const JobList: React.FC = () => {
                   <th className="px-3 py-3  text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
                     Category
                   </th>
-                  <th className="px-3 py-3  text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
+                  {/* <th className="px-3 py-3  text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
                     Budget
-                  </th>
+                  </th> */}
                   <th className="px-3 py-3  text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">
                     Location
                   </th>
@@ -455,16 +455,16 @@ const JobList: React.FC = () => {
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.category}
                     </td>
-                    <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                    {/* <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {formatCurrency(job.budget.min, job.budget.currency)} -{" "}
                       {formatCurrency(job.budget.max, job.budget.currency)}
-                    </td>
+                    </td> */}
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.location.type === "remote"
                         ? "Remote"
                         : typeof job.location.address === "string"
-                        ? job.location.address
-                        : job.location.address?.street || "On-site"}
+                          ? job.location.address
+                          : job.location.address?.street || "On-site"}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {getExperienceLevelText(job.experienceLevel)}
@@ -521,22 +521,20 @@ const JobList: React.FC = () => {
                       </button>
                       {/* Approve/Reject buttons always visible */}
                       <button
-                        className={`p-2 rounded ${
-                          job.isAdminApproved
-                            ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                            : "bg-green-600 text-white hover:bg-green-700"
-                        } disabled:opacity-50`}
+                        className={`p-2 rounded ${job.isAdminApproved
+                          ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                          : "bg-green-600 text-white hover:bg-green-700"
+                          } disabled:opacity-50`}
                         disabled={approvingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, true)}
                       >
                         {approvingJobId === job._id ? "Approving..." : "Approve"}
                       </button>
                       <button
-                        className={`p-2 rounded ${
-                          job.isAdminApproved === false
-                            ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                            : "bg-red-600 text-white hover:bg-red-700"
-                        } disabled:opacity-50`}
+                        className={`p-2 rounded ${job.isAdminApproved === false
+                          ? "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                          : "bg-red-600 text-white hover:bg-red-700"
+                          } disabled:opacity-50`}
                         disabled={rejectingJobId === job._id}
                         onClick={() => handleApproveJob(job._id, false)}
                       >
@@ -585,11 +583,10 @@ const JobList: React.FC = () => {
               <button
                 key={idx}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded ${
-                  pagination.page === pageNum
-                    ? "bg-indigo-500 text-white"
-                    : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                className={`px-3 py-1 rounded ${pagination.page === pageNum
+                  ? "bg-indigo-500 text-white"
+                  : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
               >
                 {pageNum}
               </button>
