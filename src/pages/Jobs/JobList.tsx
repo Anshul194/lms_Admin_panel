@@ -99,20 +99,47 @@ const JobList: React.FC = () => {
     setShowProposals(true);
   };
 
-  const formatCurrency = (amount: number, currency?: string) => {
-    // Default to USD if currency is undefined, null, or empty
-    const currencyCode = currency && currency.trim() ? currency : "INR";
-    try {
-      return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: currencyCode,
-        minimumFractionDigits: 0,
-      }).format(amount);
-    } catch (error) {
-      console.error("Currency formatting error:", error);
-      // Fallback to basic formatting with USD symbol if an error occurs
-      return `$${amount.toLocaleString()}`;
+  // Helper to format budget with LPA logic
+  const formatBudget = (budget: { min: number; max: number; currency: string }, mode?: string) => {
+    const { min, max, currency } = budget;
+
+    if (mode === "full-time") {
+      if (currency === "LPA") return `₹ ${max} LPA`;
+      if (currency === "INR" || currency === "₹") {
+        if (max >= 100000) {
+          const maxL = (max / 100000).toFixed(1).replace(/\.0$/, '');
+          return `₹ ${maxL} LPA`;
+        }
+        return `₹ ${max.toLocaleString('en-IN')}`;
+      }
+      const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
+      return `${symbol} ${max.toLocaleString()}`;
     }
+
+    if (currency === "LPA") {
+      if (min === max) {
+        return `₹ ${min} LPA`;
+      }
+      return `₹ ${min} - ${max} LPA`;
+    }
+
+    // Auto-convert INR to LPA if > 100,000
+    if ((currency === "INR" || currency === "₹") && min >= 100000) {
+      const minL = (min / 100000).toFixed(1).replace(/\.0$/, '');
+      const maxL = (max / 100000).toFixed(1).replace(/\.0$/, '');
+
+      if (minL === maxL) {
+        return `₹ ${minL} LPA`;
+      }
+      return `₹ ${minL} - ${maxL} LPA`;
+    }
+
+    const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : "£";
+
+    if (min === max) {
+      return `${currencySymbol} ${min.toLocaleString()}`;
+    }
+    return `${currencySymbol} ${min.toLocaleString()} - ${max.toLocaleString()}`;
   };
 
   const getStatusColor = (status: boolean) => {
@@ -470,7 +497,7 @@ const JobList: React.FC = () => {
                       {getExperienceLevelText(job.experienceLevel)}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                      {job.estimatedDuration.value} {job.estimatedDuration.unit}
+                      {job.mode === "full-time" ? "-" : `${job.estimatedDuration.value} ${job.estimatedDuration.unit}`}
                     </td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                       {job.skillsRequired.length > 0

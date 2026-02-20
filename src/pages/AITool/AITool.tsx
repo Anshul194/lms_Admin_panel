@@ -32,11 +32,13 @@ interface AISettings {
 
 interface KnowledgeBaseItem {
   _id: string;
-  type: 'text' | 'url' | 'pdf';
+  type: 'text' | 'url' | 'pdf' | 'docx' | 'xlsx';
   title: string;
   content?: string;
   source: string;
   metadata?: any;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  error?: string;
   createdAt: string;
 }
 
@@ -51,11 +53,11 @@ const AITool: React.FC = () => {
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeBaseItem[]>([]);
   const [showAddKnowledge, setShowAddKnowledge] = useState(false);
   const [newKnowledge, setNewKnowledge] = useState({
-    type: 'text' as 'text' | 'url' | 'pdf',
+    type: 'file' as 'text' | 'url' | 'file',
     title: '',
     content: '',
     url: '',
-    file: null as File | null,
+    files: null as FileList | null,
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -343,11 +345,33 @@ const AITool: React.FC = () => {
     }
   };
 
+  // Poll status for a knowledge base item
+  const pollItemStatus = async (itemId: string) => {
+    try {
+      const { data } = await axiosInstance.get(`/ai/knowledge/${itemId}`);
+      const status = data.item.status;
+
+      if (status === 'completed' || status === 'failed') {
+        // Update the item in the list
+        setKnowledgeItems((prev) =>
+          prev.map((item) =>
+            item._id === itemId ? { ...item, ...data.item } : item
+          )
+        );
+      } else {
+        // Still pending or processing, poll again in 2 seconds
+        setTimeout(() => pollItemStatus(itemId), 2000);
+      }
+    } catch (error) {
+      console.error('Polling error for item', itemId, error);
+    }
+  };
+
   // Add Knowledge Base Item
   const addKnowledgeItem = async () => {
     try {
       // Validation
-      if (!newKnowledge.title.trim()) {
+      if (!newKnowledge.title.trim() && newKnowledge.type !== 'file') {
         alert('Title is required');
         return;
       }
@@ -362,22 +386,26 @@ const AITool: React.FC = () => {
         return;
       }
 
-      if (newKnowledge.type === 'pdf' && !newKnowledge.file) {
-        alert('PDF file is required for pdf type');
+      if (newKnowledge.type === 'file' && (!newKnowledge.files || newKnowledge.files.length === 0)) {
+        alert('At least one file is required');
         return;
       }
 
       const formData = new FormData();
-      formData.append('type', newKnowledge.type);
-      formData.append('title', newKnowledge.title);
 
       if (newKnowledge.type === 'text') {
+        formData.append('type', 'text');
+        formData.append('title', newKnowledge.title);
         formData.append('content', newKnowledge.content);
       } else if (newKnowledge.type === 'url') {
+        formData.append('type', 'url');
+        formData.append('title', newKnowledge.title);
         formData.append('url', newKnowledge.url);
-      } else if (newKnowledge.type === 'pdf' && newKnowledge.file) {
-        // Field name must be 'file' as per API spec
-        formData.append('file', newKnowledge.file);
+      } else if (newKnowledge.type === 'file' && newKnowledge.files) {
+        // Append multiple files with same field name 'files'
+        Array.from(newKnowledge.files).forEach((file) => {
+          formData.append('files', file);
+        });
       }
 
       const response = await axiosInstance.post('/ai/knowledge', formData, {
@@ -386,11 +414,21 @@ const AITool: React.FC = () => {
         },
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.items) {
         setShowAddKnowledge(false);
-        setNewKnowledge({ type: 'text', title: '', content: '', url: '', file: null });
-        await fetchKnowledgeItems();
-        alert('Knowledge base item added successfully!');
+        setNewKnowledge({ type: 'file', title: '', content: '', url: '', files: null });
+
+        // Add new items to the list immediately
+        setKnowledgeItems((prev) => [...response.data.items, ...prev]);
+
+        // Start polling for each item with pending status
+        response.data.items.forEach((item: KnowledgeBaseItem) => {
+          if (item.status === 'pending' || item.status === 'processing') {
+            pollItemStatus(item._id);
+          }
+        });
+
+        alert(`${response.data.items.length} item(s) added successfully!`);
       }
     } catch (error: any) {
       console.error('Error adding knowledge item:', error);
@@ -398,6 +436,7 @@ const AITool: React.FC = () => {
       alert(errorMessage);
     }
   };
+
 
   // Delete Knowledge Base Item
   const deleteKnowledgeItem = async (id: string) => {
@@ -775,7 +814,7 @@ const AITool: React.FC = () => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              Add Item
+              Add Items
             </button>
           </div>
 
@@ -798,20 +837,22 @@ const AITool: React.FC = () => {
                     onChange={(e) => setNewKnowledge({ ...newKnowledge, type: e.target.value as any })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
                   >
-                    <option value="text">Text</option>
+                    <option value="file">PDF</option>
+                    {/* <option value="text">Text</option> */}
                     <option value="url">URL</option>
-                    <option value="pdf">PDF</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={newKnowledge.title}
-                    onChange={(e) => setNewKnowledge({ ...newKnowledge, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-                  />
-                </div>
+                {newKnowledge.type !== 'file' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={newKnowledge.title}
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, title: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                    />
+                  </div>
+                )}
                 {newKnowledge.type === 'text' && (
                   <div>
                     <label className="block text-sm font-medium mb-2">Content</label>
@@ -834,15 +875,21 @@ const AITool: React.FC = () => {
                     />
                   </div>
                 )}
-                {newKnowledge.type === 'pdf' && (
+                {newKnowledge.type === 'file' && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">PDF File</label>
+                    <label className="block text-sm font-medium mb-2">Files (PDF, DOCX, XLSX, TXT)</label>
                     <input
                       type="file"
-                      accept=".pdf"
-                      onChange={(e) => setNewKnowledge({ ...newKnowledge, file: e.target.files?.[0] || null })}
+                      accept=".pdf,.docx,.xlsx,.txt"
+                      multiple
+                      onChange={(e) => setNewKnowledge({ ...newKnowledge, files: e.target.files })}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
                     />
+                    {newKnowledge.files && newKnowledge.files.length > 0 && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        {newKnowledge.files.length} file(s) selected
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="flex gap-2">
@@ -870,21 +917,53 @@ const AITool: React.FC = () => {
                 className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
               >
                 <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1">
                     {item.type === 'text' && <FileText className="w-5 h-5 text-blue-600" />}
                     {item.type === 'url' && <LinkIcon className="w-5 h-5 text-green-600" />}
                     {item.type === 'pdf' && <Upload className="w-5 h-5 text-red-600" />}
-                    <h3 className="font-semibold">{item.title}</h3>
+                    {item.type === 'docx' && <FileText className="w-5 h-5 text-blue-500" />}
+                    {item.type === 'xlsx' && <FileText className="w-5 h-5 text-green-500" />}
+                    <h3 className="font-semibold truncate">{item.title}</h3>
                   </div>
                   <button
                     onClick={() => deleteKnowledgeItem(item._id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 ml-2"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+
+                {/* Status Badge */}
+                <div className="mb-2">
+                  {item.status === 'pending' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      ⏳ Pending
+                    </span>
+                  )}
+                  {item.status === 'processing' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      🔄 Processing
+                    </span>
+                  )}
+                  {item.status === 'completed' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      ✅ Completed
+                    </span>
+                  )}
+                  {item.status === 'failed' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                      ❌ Failed
+                    </span>
+                  )}
+                </div>
+
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{item.source}</p>
-                {item.content && (
+                {item.error && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mb-2">
+                    Error: {item.error}
+                  </p>
+                )}
+                {item.content && item.status === 'completed' && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
                     {item.content.substring(0, 150)}...
                   </p>

@@ -41,9 +41,15 @@ import {
   Building2,
   Save,
   X,
+  MessageCircle,
+  Briefcase,
+  LogIn,
 } from "lucide-react";
 import EnrollStudentPopup from "../../components/students/EnrollStudentPopup";
 import StudentAnalyticsTab from "./StudentAnalyticsTab";
+import { getStudentForumPosts, getStudentForumReplies, getStudentJobPosts } from "../../services/studentActivityService";
+import axiosInstance from "../../services/axiosConfig";
+import { downloadCertificateByUserAndCourse } from "../../utils/certificateDownload";
 
 const ImageUrl = import.meta.env.VITE_IMAGE_URL;
 
@@ -85,6 +91,9 @@ function StudentDetail() {
       name?: string;
       gstNumber?: string;
     };
+    lastLogin?: string;
+    last_login?: string;
+    lastLoginAt?: string;
     // Add any other fields you use from 'data'
   };
 
@@ -133,6 +142,12 @@ function StudentDetail() {
   const [newExpiryDate, setNewExpiryDate] = useState<string>("");
   const [updatingExpiry, setUpdatingExpiry] = useState(false);
 
+  // Student activity state
+  const [forumPosts, setForumPosts] = useState<any[]>([]);
+  const [forumReplies, setForumReplies] = useState<any[]>([]);
+  const [jobPosts, setJobPosts] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
   useEffect(() => {
     // Auto-hide toast after 2.5s
     if (toast) {
@@ -159,6 +174,67 @@ function StudentDetail() {
       fetchData();
     }
   }, [studentId, dispatch]);
+
+  // Fetch student activity data (forum posts, replies, job posts)
+  useEffect(() => {
+    const fetchActivityData = async () => {
+      if (!studentId || !data?._id) return;
+      
+      setLoadingActivity(true);
+      try {
+        // Fetch forum posts
+        try {
+          // Try admin endpoint first, fallback to regular endpoint
+          const forumPostsResponse = await axiosInstance.get(`/admin/students/${data._id}/forum-posts`, {
+            params: { page: 1, limit: 5 }
+          });
+          setForumPosts(forumPostsResponse.data?.data || forumPostsResponse.data?.threads || []);
+        } catch (error) {
+          // If admin endpoint doesn't exist, try alternative approach
+          console.log("Admin endpoint not available, trying alternative...");
+          setForumPosts([]);
+        }
+
+        // Fetch forum replies
+        try {
+          const forumRepliesResponse = await axiosInstance.get(`/admin/students/${data._id}/forum-replies`, {
+            params: { page: 1, limit: 5 }
+          });
+          setForumReplies(forumRepliesResponse.data?.data || forumRepliesResponse.data?.replies || []);
+        } catch (error) {
+          console.log("Forum replies endpoint not available");
+          setForumReplies([]);
+        }
+
+        // Fetch job posts
+        try {
+          const jobPostsResponse = await axiosInstance.get(`/admin/students/${data._id}/job-posts`, {
+            params: { page: 1, limit: 5 }
+          });
+          setJobPosts(jobPostsResponse.data?.data || jobPostsResponse.data?.jobPosts || []);
+        } catch (error) {
+          // Try alternative endpoint
+          try {
+            const altResponse = await axiosInstance.get(`/jobs`, {
+              params: { createdBy: data._id, page: 1, limit: 5 }
+            });
+            setJobPosts(altResponse.data?.data || []);
+          } catch (err) {
+            console.log("Job posts endpoint not available");
+            setJobPosts([]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching activity data:", error);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    if (data?._id) {
+      fetchActivityData();
+    }
+  }, [data?._id, studentId]);
 
   // Fetch modules for selected course when popup opens
   useEffect(() => {
@@ -692,7 +768,14 @@ function StudentDetail() {
 
             {Array.isArray(data.enrollments) && data.enrollments.length > 0 && Object.keys(data.enrollments[0]).length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {data.enrollments.map((enrollment, index) => (
+                {[...data.enrollments]
+                  .sort((a, b) => {
+                    // Sort by enrollment date (most recent first)
+                    const dateA = a.enrolledAt ? new Date(a.enrolledAt).getTime() : 0;
+                    const dateB = b.enrolledAt ? new Date(b.enrolledAt).getTime() : 0;
+                    return dateB - dateA; // Descending order (newest first)
+                  })
+                  .map((enrollment, index) => (
                   <div
                     key={index}
                     className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-200 overflow-hidden"
@@ -821,10 +904,31 @@ function StudentDetail() {
                           <ArrowRight className="w-4 h-4 ml-1" />
                         </a>
                         {enrollment.certificateIssued && (
-                          <span className="inline-flex items-center text-sm text-green-600">
-                            <Award className="w-4 h-4 mr-1" />
-                            Certified
-                          </span>
+                          <div className="inline-flex items-center gap-2">
+                            <span className="inline-flex items-center text-sm text-green-600">
+                              <Award className="w-4 h-4 mr-1" />
+                              Certified
+                            </span>
+                            <button
+                              className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium hover:bg-blue-200 transition-colors"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (data?._id && enrollment.course?._id) {
+                                  await downloadCertificateByUserAndCourse(
+                                    dispatch,
+                                    data._id,
+                                    enrollment.course._id,
+                                    `certificate-${enrollment.course?.title || "course"}.pdf`
+                                  );
+                                }
+                              }}
+                              title="Download Certificate"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Download
+                            </button>
+                          </div>
                         )}
 
                         {/* Add enrolledAt and accessExpiry */}
@@ -864,7 +968,193 @@ function StudentDetail() {
         )}
 
         {activeTab === "profile" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+            {/* Contact Information with Last Login */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <User className="mr-2 h-5 w-5 text-green-500" />
+                Contact Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Mail className="w-5 h-5 text-gray-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{data.email}</p>
+                    <p className="text-xs text-gray-500">Primary Email</p>
+                  </div>
+                </div>
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Phone className="w-5 h-5 text-gray-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{data?.phone || "N/A"}</p>
+                    <p className="text-xs text-gray-500">Mobile Number</p>
+                  </div>
+                </div>
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Calendar className="w-5 h-5 text-gray-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{formatDate(data.createdAt)}</p>
+                    <p className="text-xs text-gray-500">Member Since</p>
+                  </div>
+                </div>
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <LogIn className="w-5 h-5 text-gray-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {(data.lastLogin || data.last_login || data.lastLoginAt) ? (
+                        new Date(data.lastLogin || data.last_login || data.lastLoginAt || "").toLocaleString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      ) : (
+                        "Never"
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500">Last Login</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Student Activity Section - Forum Posts, Replies, Job Posts */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Forum Posts */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <MessageCircle className="mr-2 h-5 w-5 text-blue-500" />
+                    Forum Posts
+                  </h3>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {forumPosts.length}
+                  </span>
+                </div>
+                {loadingActivity ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto"></div>
+                  </div>
+                ) : forumPosts.length > 0 ? (
+                  <div className="space-y-3">
+                    {forumPosts.slice(0, 5).map((post, index) => (
+                      <div key={post._id || index} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {post.title || "Untitled Post"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {post.createdAt ? formatDate(post.createdAt) : "N/A"}
+                        </p>
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {post.tags.slice(0, 2).map((tag: string, idx: number) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageCircle className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                    <p className="text-sm">No forum posts yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Forum Replies */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <MessageCircle className="mr-2 h-5 w-5 text-green-500" />
+                    Forum Replies
+                  </h3>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {forumReplies.length}
+                  </span>
+                </div>
+                {loadingActivity ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-green-500 border-t-transparent mx-auto"></div>
+                  </div>
+                ) : forumReplies.length > 0 ? (
+                  <div className="space-y-3">
+                    {forumReplies.slice(0, 5).map((reply, index) => (
+                      <div key={reply._id || index} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {reply.content || "No content"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {reply.createdAt ? formatDate(reply.createdAt) : "N/A"}
+                        </p>
+                        {reply.threadId && (
+                          <p className="text-xs text-blue-600 mt-1">Thread: {reply.threadId}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageCircle className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                    <p className="text-sm">No forum replies yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Job Posts */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Briefcase className="mr-2 h-5 w-5 text-purple-500" />
+                    Job Posts
+                  </h3>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {jobPosts.length}
+                  </span>
+                </div>
+                {loadingActivity ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent mx-auto"></div>
+                  </div>
+                ) : jobPosts.length > 0 ? (
+                  <div className="space-y-3">
+                    {jobPosts.slice(0, 5).map((job, index) => (
+                      <div key={job._id || index} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                          {job.title || "Untitled Job"}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {job.createdAt ? formatDate(job.createdAt) : "N/A"}
+                        </p>
+                        {job.status && (
+                          <span className={`inline-block mt-2 text-xs px-2 py-0.5 rounded ${
+                            job.status === "approved" || job.status === "active"
+                              ? "bg-green-100 text-green-700"
+                              : job.status === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
+                          }`}>
+                            {job.status}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Briefcase className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                    <p className="text-sm">No job posts yet</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Profile Information */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center mb-6">
                 <User className="mr-2 h-5 w-5 text-indigo-500" />
@@ -1064,6 +1354,7 @@ function StudentDetail() {
                   <p className="text-gray-600">No documents uploaded yet</p>
                 </div>
               )}
+            </div>
             </div>
           </div>
         )}

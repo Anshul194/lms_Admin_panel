@@ -97,6 +97,30 @@ export const deleteCertificate = createAsyncThunk(
   }
 );
 
+// Download certificate as PDF
+export const fetchCertificatePdf = createAsyncThunk(
+  "certificate/fetchCertificatePdf",
+  async (
+    { certificateId }: { certificateId: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await axiosInstance.get(
+        `/certificates/${certificateId}/pdf`,
+        {
+          responseType: "blob",
+          headers: {
+            "Content-Type": "application/pdf",
+          },
+        }
+      );
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 const certificateSlice = createSlice({
   name: "certificate",
   initialState,
@@ -171,6 +195,19 @@ const certificateSlice = createSlice({
         state.data = action.payload;
       })
       .addCase(deleteCertificate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+
+      .addCase(fetchCertificatePdf.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCertificatePdf.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = action.payload;
+      })
+      .addCase(fetchCertificatePdf.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

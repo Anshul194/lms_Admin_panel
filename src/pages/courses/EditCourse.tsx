@@ -244,7 +244,7 @@ const EditCourse = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: "",
     subtitle: "",
     seoMetaDescription: "",
@@ -266,9 +266,33 @@ const EditCourse = () => {
     isSubscription: false,
     isPrivate: false,
     enableWaitlist: false,
-    // accessType: "lifetime",
-    // accessPeriod: "",
     coursePosition: "",
+    // Mentor fields
+    mentorName: "",
+    mentorTitle: "",
+    mentorDescription: "",
+    mentorImage: "",
+    mentorImageFile: null as File | null,
+    mentorAchievements: [] as string[],
+    mentorSocialLinks: {
+      linkedin: "",
+      twitter: "",
+      youtube: "",
+      website: ""
+    },
+    // Learning outcomes and target audience
+    learningOutcomes: [],
+    targetAudience: [],
+    // Certificate fields
+    certificateImage: "",
+    certificateImageFile: null,
+    certificateTitle: "Certificate of Completion",
+    certificateSubtitle: "Awarded for Excellence",
+    certificateRecipientName: "Student Name",
+    certificateIssuerName: "",
+    certificateIssuerTitle: "",
+    certificateOrganization: "Lapaas LMS",
+    certificateDescription: "",
     // Enhanced Landing Page Sections
     overviewSection: { show: false, title: "", subtitle: "", description: null, images: [] },
     comparisonSection: {
@@ -476,30 +500,46 @@ const EditCourse = () => {
         // accessPeriod: course.accessPeriod || "",
         // Enhanced Landing Page Sections
         overviewSection: {
-          ...(course.overviewSection || { show: false, title: "", subtitle: "", description: "", images: [] }),
+          show: course.overviewSection?.show || false,
+          title: course.overviewSection?.title || "",
+          subtitle: course.overviewSection?.subtitle || "",
+          images: course.overviewSection?.images || [],
           description: parseEditorData(course.overviewSection?.description)
         },
         comparisonSection: {
-          ...(course.comparisonSection || {
-            show: false,
-            title: "",
-            leftTitle: "Traditional Program",
-            rightTitle: "Our Program",
-            leftPoints: [""],
-            rightPoints: [""]
-          }),
+          show: course.comparisonSection?.show || false,
+          title: course.comparisonSection?.title || "",
+          leftTitle: course.comparisonSection?.leftTitle || "Traditional Program",
+          rightTitle: course.comparisonSection?.rightTitle || "Our Program",
+          leftPoints: (course.comparisonSection?.leftPoints && course.comparisonSection.leftPoints.length > 0)
+            ? course.comparisonSection.leftPoints
+            : [""],
+          rightPoints: (course.comparisonSection?.rightPoints && course.comparisonSection.rightPoints.length > 0)
+            ? course.comparisonSection.rightPoints
+            : [""],
           content: parseEditorData(course.comparisonSection?.content)
         },
         benefitsSection: {
-          ...(course.benefitsSection || { show: false, title: "", points: [""] }),
+          show: course.benefitsSection?.show || false,
+          title: course.benefitsSection?.title || "",
+          points: (course.benefitsSection?.points && course.benefitsSection.points.length > 0)
+            ? course.benefitsSection.points
+            : [""],
           content: parseEditorData(course.benefitsSection?.content)
         },
         frameworkSection: {
-          ...(course.frameworkSection || { show: false, title: "", subtitle: "", description: "", media: "" }),
+          show: course.frameworkSection?.show || false,
+          title: course.frameworkSection?.title || "",
+          subtitle: course.frameworkSection?.subtitle || "",
+          media: course.frameworkSection?.media || "",
           description: parseEditorData(course.frameworkSection?.description)
         },
         solutionSection: {
-          ...(course.solutionSection || { show: false, title: "", points: [""] }),
+          show: course.solutionSection?.show || false,
+          title: course.solutionSection?.title || "",
+          points: (course.solutionSection?.points && course.solutionSection.points.length > 0)
+            ? course.solutionSection.points
+            : [""],
           content: parseEditorData(course.solutionSection?.content)
         },
       }));
@@ -725,7 +765,7 @@ const EditCourse = () => {
           if (key === "comparisonSection") {
             const cleanedSection = {
               ...value,
-              leftPoints: Array.isArray(value.leftPoints) 
+              leftPoints: Array.isArray(value.leftPoints)
                 ? value.leftPoints.filter((point: any) => point != null && String(point).trim() !== '')
                 : [],
               rightPoints: Array.isArray(value.rightPoints)
@@ -1956,6 +1996,142 @@ const EditCourse = () => {
                           })}
                           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
                         />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                              Left Column Title (Traditional Program)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Traditional Program"
+                              value={formData.comparisonSection?.leftTitle}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                comparisonSection: { ...formData.comparisonSection, leftTitle: e.target.value }
+                              })}
+                              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                            />
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mt-4">
+                              Left Column Points
+                            </label>
+                            <div className="space-y-2">
+                              {(formData.comparisonSection?.leftPoints && formData.comparisonSection.leftPoints.length > 0 ? formData.comparisonSection.leftPoints : []).map((point: any, index: number) => (
+                                <div key={index} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={point}
+                                    onChange={(e) => {
+                                      const updated = [...(formData.comparisonSection?.leftPoints || [])];
+                                      updated[index] = e.target.value;
+                                      setFormData({
+                                        ...formData,
+                                        comparisonSection: { ...formData.comparisonSection, leftPoints: updated }
+                                      });
+                                    }}
+                                    className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                    placeholder="Enter point"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = (formData.comparisonSection?.leftPoints || []).filter((_: any, i: number) => i !== index);
+                                      setFormData({
+                                        ...formData,
+                                        comparisonSection: { ...formData.comparisonSection, leftPoints: updated }
+                                      });
+                                    }}
+                                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    comparisonSection: {
+                                      ...formData.comparisonSection,
+                                      leftPoints: [...(formData.comparisonSection?.leftPoints || []), ""]
+                                    }
+                                  });
+                                }}
+                                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Left Point
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                              Right Column Title (Our Program)
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Our Program"
+                              value={formData.comparisonSection?.rightTitle}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                comparisonSection: { ...formData.comparisonSection, rightTitle: e.target.value }
+                              })}
+                              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                            />
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mt-4">
+                              Right Column Points
+                            </label>
+                            <div className="space-y-2">
+                              {(formData.comparisonSection?.rightPoints && formData.comparisonSection.rightPoints.length > 0 ? formData.comparisonSection.rightPoints : []).map((point: any, index: number) => (
+                                <div key={index} className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={point}
+                                    onChange={(e) => {
+                                      const updated = [...(formData.comparisonSection?.rightPoints || [])];
+                                      updated[index] = e.target.value;
+                                      setFormData({
+                                        ...formData,
+                                        comparisonSection: { ...formData.comparisonSection, rightPoints: updated }
+                                      });
+                                    }}
+                                    className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                    placeholder="Enter point"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = (formData.comparisonSection?.rightPoints || []).filter((_: any, i: number) => i !== index);
+                                      setFormData({
+                                        ...formData,
+                                        comparisonSection: { ...formData.comparisonSection, rightPoints: updated }
+                                      });
+                                    }}
+                                    className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    comparisonSection: {
+                                      ...formData.comparisonSection,
+                                      rightPoints: [...(formData.comparisonSection?.rightPoints || []), ""]
+                                    }
+                                  });
+                                }}
+                                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add Right Point
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                         <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
                           <Editor
                             key="comparison-editor-unique"
@@ -2017,6 +2193,60 @@ const EditCourse = () => {
                             })}
                             uploadEndpoint="/courses/images"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                            Key Benefits Points
+                          </label>
+                          <div className="space-y-2">
+                            {(formData.benefitsSection?.points || [""]).map((point: any, index: number) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={point}
+                                  onChange={(e) => {
+                                    const updated = [...(formData.benefitsSection?.points || [""])];
+                                    updated[index] = e.target.value;
+                                    setFormData({
+                                      ...formData,
+                                      benefitsSection: { ...formData.benefitsSection, points: updated }
+                                    });
+                                  }}
+                                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                  placeholder="Enter benefit point"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = (formData.benefitsSection?.points || [""]).filter((_: any, i: number) => i !== index);
+                                    setFormData({
+                                      ...formData,
+                                      benefitsSection: { ...formData.benefitsSection, points: updated }
+                                    });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  benefitsSection: {
+                                    ...formData.benefitsSection,
+                                    points: [...(formData.benefitsSection?.points || [""]), ""]
+                                  }
+                                });
+                              }}
+                              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Benefit Point
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2137,6 +2367,60 @@ const EditCourse = () => {
                             })}
                             uploadEndpoint="/courses/images"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                            Solution Points
+                          </label>
+                          <div className="space-y-2">
+                            {(formData.solutionSection?.points || [""]).map((point: any, index: number) => (
+                              <div key={index} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={point}
+                                  onChange={(e) => {
+                                    const updated = [...(formData.solutionSection?.points || [""])];
+                                    updated[index] = e.target.value;
+                                    setFormData({
+                                      ...formData,
+                                      solutionSection: { ...formData.solutionSection, points: updated }
+                                    });
+                                  }}
+                                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200"
+                                  placeholder="Enter solution point"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = (formData.solutionSection?.points || [""]).filter((_: any, i: number) => i !== index);
+                                    setFormData({
+                                      ...formData,
+                                      solutionSection: { ...formData.solutionSection, points: updated }
+                                    });
+                                  }}
+                                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  solutionSection: {
+                                    ...formData.solutionSection,
+                                    points: [...(formData.solutionSection?.points || [""]), ""]
+                                  }
+                                });
+                              }}
+                              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Solution Point
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2423,8 +2707,8 @@ const EditCourse = () => {
               </button>
             </div>
           </form>
-        </div>
-      </div>
+        </div >
+      </div >
     </>
   );
 };

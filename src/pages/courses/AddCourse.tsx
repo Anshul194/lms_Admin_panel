@@ -437,8 +437,8 @@ const AddCourse = () => {
       leftTitle: "Traditional Program",
       rightTitle: "Our Program",
       content: null,
-      leftPoints: [],
-      rightPoints: []
+      leftPoints: [""],
+      rightPoints: [""]
     },
     benefitsSection: { show: false, title: "", content: null, points: [""] },
     frameworkSection: { show: false, title: "", subtitle: "", description: null, media: "" },
@@ -619,7 +619,7 @@ const AddCourse = () => {
           if (key === "comparisonSection") {
             const cleanedSection = {
               ...value,
-              leftPoints: Array.isArray(value.leftPoints) 
+              leftPoints: Array.isArray(value.leftPoints)
                 ? value.leftPoints.filter((point: any) => point != null && String(point).trim() !== '')
                 : [],
               rightPoints: Array.isArray(value.rightPoints)
@@ -1119,10 +1119,10 @@ const AddCourse = () => {
                 <YouTubeUrlInput
                   label="Demo Video URL"
                   value={demoVideoUrl}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setDemoVideoUrl(e.target.value);
-                      setFormErrors((prev) => ({ ...prev, demoVideoUrl: "" }));
-                    }}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setDemoVideoUrl(e.target.value);
+                    setFormErrors((prev) => ({ ...prev, demoVideoUrl: "" }));
+                  }}
                   error={formErrors.demoVideoUrl}
                 />
               </div>
@@ -1153,11 +1153,10 @@ const AddCourse = () => {
                       }}
                       step="0.01"
                       min="0"
-                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        formErrors.price
+                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.price
                           ? "border-red-400"
                           : "border-gray-300 dark:border-gray-600"
-                      }`}
+                        }`}
                       placeholder="Course price"
                       required
                     />
@@ -1166,36 +1165,35 @@ const AddCourse = () => {
                     )}
                   </div>
                   <div>
-                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                     <DollarSign className="w-4 h-4 inline mr-1" />
-                     Sale Price 
-                   </label>
-                   <input
-                     type="number"
-                     name="salePrice"
-                     value={formData.salePrice}
-                     onChange={(e) => {
-                       const value = e.target.value;
-                       if (
-                         value === "" ||
-                         /^\d+(\.\d{0,2})?$/.test(value)
-                       ) {
-                         handleInputChange(e);
-                       }
-                     }}
-                     step="0.01"
-                     min="0"
-                     className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                       formErrors.salePrice
-                         ? "border-red-400"
-                         : "border-gray-300 dark:border-gray-600"
-                     }`}
-                     placeholder="Course sale price"
-                   />
-                   {formErrors.salePrice && (
-                     <p className="mt-1 text-xs text-red-600">{formErrors.salePrice}</p>
-                   )}
-                 </div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      <DollarSign className="w-4 h-4 inline mr-1" />
+                      Sale Price
+                    </label>
+                    <input
+                      type="number"
+                      name="salePrice"
+                      value={formData.salePrice}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (
+                          value === "" ||
+                          /^\d+(\.\d{0,2})?$/.test(value)
+                        ) {
+                          handleInputChange(e);
+                        }
+                      }}
+                      step="0.01"
+                      min="0"
+                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.salePrice
+                          ? "border-red-400"
+                          : "border-gray-300 dark:border-gray-600"
+                        }`}
+                      placeholder="Course sale price"
+                    />
+                    {formErrors.salePrice && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.salePrice}</p>
+                    )}
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -1612,11 +1610,11 @@ const AddCourse = () => {
                         <input
                           type="text"
                           value={achievement}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                              const updated = [...(formData.mentorAchievements || [] as string[])];
-                              updated[index] = e.target.value;
-                              setFormData({ ...formData, mentorAchievements: updated as string[] });
-                            }}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const updated = [...(formData.mentorAchievements || [] as string[])];
+                            updated[index] = e.target.value;
+                            setFormData({ ...formData, mentorAchievements: updated as string[] });
+                          }}
                           className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter achievement"
                         />
@@ -1634,13 +1632,13 @@ const AddCourse = () => {
                     ))}
                     <button
                       type="button"
-                        onClick={() => {
-                          const current = formData.mentorAchievements || [];
-                          setFormData({
-                            ...formData,
-                            mentorAchievements: [...current, ""]
-                          });
-                        }}
+                      onClick={() => {
+                        const current = formData.mentorAchievements || [];
+                        setFormData({
+                          ...formData,
+                          mentorAchievements: [...current, ""]
+                        });
+                      }}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
