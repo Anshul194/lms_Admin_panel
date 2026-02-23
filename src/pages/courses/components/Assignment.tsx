@@ -24,7 +24,7 @@ import {
   updateAssignment,
   fetchAssignmentById,
 } from "../../../store/slices/assignment";
-const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000/";
+const baseUrl = import.meta.env.VITE_BASE_URL || "https://api.edrilla.com/";
 
 // Enhanced popup component similar to TextLesson component
 interface EnhancedPopupProps {

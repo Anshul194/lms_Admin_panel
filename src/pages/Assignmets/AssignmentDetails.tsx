@@ -159,7 +159,7 @@ const AssignmentSubmissionReview = () => {
     if (!filePath) return;
 
     // Create a proper download link
-    const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+    const baseUrl = import.meta.env.VITE_BASE_URL || "https://api.edrilla.com";
     const fullUrl = `${baseUrl}/${filePath}`;
 
     // Create a temporary anchor element for download

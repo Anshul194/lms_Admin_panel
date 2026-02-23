@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { RootState } from "../../store";
 
-const BASE_URL = import.meta.env.VITE_IMAGE_URL || "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_IMAGE_URL || "https://api.edrilla.com";
 
 const ForumDetails: React.FC = () => {
   const { threadId } = useParams<{ threadId: string }>();

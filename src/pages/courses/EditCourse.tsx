@@ -39,7 +39,7 @@ import Faqs from "./components/Faqs";
 import QuillEditor from "../../components/QuillEditor";
 import Editor from "../../components/Editor";
 
-const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000/";
+const baseUrl = import.meta.env.VITE_BASE_URL || "https://api.edrilla.com/";
 
 // Success Popup Component (unchanged)
 const SuccessPopup = ({
