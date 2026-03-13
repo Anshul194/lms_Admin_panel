@@ -1,5 +1,6 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BASE_URL || "https://api.edrilla.com";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BASE_URL || "https://api.edrilla.com"
+).replace(/\/$/, "");
 
 interface VideoData {
   url?: string;
@@ -101,7 +102,7 @@ export default class SimpleVideo {
         formData.append("video", file);
 
         // Get auth tokens from localStorage
-        const token = localStorage.getItem("accessToken");
+        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
         const refreshToken = localStorage.getItem("refreshToken");
         const headers: HeadersInit = {};
         if (token) {
@@ -121,6 +122,7 @@ export default class SimpleVideo {
           method: "POST",
           headers: headers,
           body: formData,
+          credentials: "include",
         });
 
         if (!res.ok) {
@@ -211,6 +213,15 @@ export default class SimpleVideo {
     return this.wrapper;
   }
 
+  _getAbsoluteUrl(url: string | undefined): string {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:")) {
+      return url;
+    }
+    // If it's a relative path starting with /, prepend API_BASE_URL
+    return url.startsWith("/") ? `${API_BASE_URL}${url}` : `${API_BASE_URL}/${url}`;
+  }
+
   _updateView() {
     // Remove previous preview box if exists
     if (this.previewBox) {
@@ -231,7 +242,7 @@ export default class SimpleVideo {
 
       // Video element
       this.videoEl = document.createElement("video");
-      this.videoEl.src = this.data.url;
+      this.videoEl.src = this._getAbsoluteUrl(this.data.url);
       this.videoEl.controls = true;
       this.videoEl.style.cssText = `
         width: 100%;
