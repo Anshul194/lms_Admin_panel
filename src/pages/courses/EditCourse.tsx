@@ -474,6 +474,7 @@ const EditCourse = () => {
         isSubscription: course.isSubscription || false,
         isPrivate: course.isPrivate || false,
         enableWaitlist: course.enableWaitlist || false,
+        coursePosition: course.coursePosition || "",
         // Mentor fields
         mentorName: course.mentorName || "",
         mentorTitle: course.mentorTitle || "",
