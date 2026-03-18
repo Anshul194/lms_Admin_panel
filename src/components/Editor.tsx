@@ -141,6 +141,7 @@ const Editor: React.FC<EditorProps> = ({
                       method: "POST",
                       headers: headers,
                       body: formData,
+                      credentials: "include",
                     });
                     
                     if (!res.ok) {
