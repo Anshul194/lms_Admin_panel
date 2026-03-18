@@ -166,6 +166,24 @@ export const fetchCourseEnrollments = createAsyncThunk<
   }
 });
 
+export const deleteCourse = createAsyncThunk(
+  "course/deleteCourse",
+  async ({ id }: { id: string }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token") || "";
+      const response = await axiosInstance.delete(`/courses/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return { id };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
 const courseSlice = createSlice({
   name: "course",
   initialState,
@@ -254,6 +272,25 @@ const courseSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+      // delete course
+      builder
+        .addCase(deleteCourse.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(deleteCourse.fulfilled, (state, action) => {
+          state.loading = false;
+          // remove course from cached list if present
+          const id = action.payload?.id;
+          if (state.data && Array.isArray(state.data.courses)) {
+            state.data.courses = state.data.courses.filter((c: any) => c._id !== id);
+            state.data.total = Math.max(0, (state.data.total || 0) - 1);
+          }
+        })
+        .addCase(deleteCourse.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload as string;
+        });
       
   },
 });

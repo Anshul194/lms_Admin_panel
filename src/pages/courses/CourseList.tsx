@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
-import { fetchCourses, fetchCourseEnrollments } from "../../store/slices/course";
+import { fetchCourses, fetchCourseEnrollments, deleteCourse } from "../../store/slices/course";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PopupAlert from "../../components/popUpAlert";
 import PageMeta from "../../components/common/PageMeta";
 import {
   Pencil,
@@ -86,6 +87,12 @@ const CourseList: React.FC = () => {
   });
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{ id: string; name: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
+  const [imageError, setImageError] = useState<{ isVisible: boolean; url?: string }>(
+    { isVisible: false }
+  );
+  const [testPopup, setTestPopup] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -108,6 +115,23 @@ const CourseList: React.FC = () => {
     page: data?.page || 1,
     limit: data?.limit || 10,
     totalPages: data?.totalPages || 1,
+  };
+
+  // Delete course handler
+  const handleConfirmDeleteCourse = async (courseId: string) => {
+    setDeletingCourse(true);
+    try {
+      await dispatch(deleteCourse({ id: courseId }) as any).unwrap();
+      // refresh list (ensure current page state preserved)
+      await dispatch(fetchCourses({ page, limit }) as any);
+      setDeleteConfirm(null);
+    } catch (e: any) {
+      // basic error feedback
+      const msg = e?.message || 'Failed to delete course';
+      window.alert(msg);
+    } finally {
+      setDeletingCourse(false);
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -188,6 +212,12 @@ const CourseList: React.FC = () => {
     }
   };
 
+  // debug: log deleteConfirm changes
+  React.useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('deleteConfirm state changed', deleteConfirm);
+  }, [deleteConfirm]);
+
   const StatusBadge = ({ isPublished }: { isPublished: boolean }) => (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
       isPublished 
@@ -216,9 +246,11 @@ const CourseList: React.FC = () => {
           alt={course.title}
           className="w-full h-48 object-cover rounded-t-xl"
           onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = "https://tse2.mm.bing.net/th/id/OIP.z2HmY-oQPSmmDwR-MYmW6QAAAA?pid=Api&P=0&h=180";
-          }}
+              const src = e.currentTarget.src;
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = "https://tse2.mm.bing.net/th/id/OIP.z2HmY-oQPSmmDwR-MYmW6QAAAA?pid=Api&P=0&h=180";
+              setImageError({ isVisible: true, url: src });
+            }}
         />
         <div className="absolute top-3 left-3">
           <StatusBadge isPublished={course.isPublished} />
@@ -287,6 +319,32 @@ const CourseList: React.FC = () => {
             >
               <Edit3 className="w-4 h-4" />
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // debug: log click and id
+                // eslint-disable-next-line no-console
+                console.log('CourseCard delete clicked', course._id);
+                setDeleteConfirm({ id: course._id, title: course.title });
+                // fallback: if PopupAlert doesn't mount quickly, use native confirm
+                setTimeout(() => {
+                  const dialog = document.querySelector('[role="dialog"]');
+                  if (!dialog) {
+                    // eslint-disable-next-line no-console
+                    console.log('PopupAlert not mounted — falling back to window.confirm');
+                    if (window.confirm(`Delete course "${course.title}"? This cannot be undone.`)) {
+                      handleConfirmDeleteCourse(course._id);
+                    } else {
+                      setDeleteConfirm(null);
+                    }
+                  }
+                }, 120);
+              }}
+              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              title="Delete Course"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -327,6 +385,12 @@ const CourseList: React.FC = () => {
             >
               <Plus className="w-5 h-5" />
               Add Course
+            </button>
+            <button
+              onClick={() => setTestPopup(true)}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50"
+            >
+              Test popup
             </button>
           </div>
         </div>
@@ -508,8 +572,10 @@ const CourseList: React.FC = () => {
                                 alt={course.title}
                                 className="w-16 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
                                 onError={(e) => {
+                                  const src = e.currentTarget.src;
                                   e.currentTarget.onerror = null;
                                   e.currentTarget.src = "https://tse2.mm.bing.net/th/id/OIP.z2HmY-oQPSmmDwR-MYmW6QAAAA?pid=Api&P=0&h=180";
+                                  setImageError({ isVisible: true, url: src });
                                 }}
                               />
                               <div>
@@ -562,6 +628,31 @@ const CourseList: React.FC = () => {
                                 title="Edit Course"
                               >
                                 <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // debug: log click and id
+                                  // eslint-disable-next-line no-console
+                                  console.log('Table delete clicked', course._id);
+                                  setDeleteConfirm({ id: course._id, title: course.title });
+                                  setTimeout(() => {
+                                    const dialog = document.querySelector('[role="dialog"]');
+                                    if (!dialog) {
+                                      // eslint-disable-next-line no-console
+                                      console.log('PopupAlert not mounted — falling back to window.confirm');
+                                      if (window.confirm(`Delete course "${course.title}"? This cannot be undone.`)) {
+                                        handleConfirmDeleteCourse(course._id);
+                                      } else {
+                                        setDeleteConfirm(null);
+                                      }
+                                    }
+                                  }, 120);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Delete Course"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </td>
@@ -872,6 +963,30 @@ const CourseList: React.FC = () => {
               </div>
             </div>
           )}
+          {/* Delete Course Confirmation Popup */}
+          <PopupAlert
+            isVisible={!!deleteConfirm}
+            type="error"
+            message={`Are you sure you want to permanently delete "${deleteConfirm?.title}"? This action cannot be undone.`}
+            onClose={() => setDeleteConfirm(null)}
+            onConfirm={() => deleteConfirm && handleConfirmDeleteCourse(deleteConfirm.id)}
+            confirmLabel={deletingCourse ? "Deleting..." : "Delete"}
+            cancelLabel="Cancel"
+          />
+
+          <PopupAlert
+            isVisible={imageError.isVisible}
+            type="error"
+            message={`Failed to load image: ${imageError.url || "unknown"}. This may be because the file is missing or blocked by cross-origin policy.`}
+            onClose={() => setImageError({ isVisible: false })}
+          />
+
+          <PopupAlert
+            isVisible={testPopup}
+            type="info"
+            message="This is a test popup. The popup component is working correctly."
+            onClose={() => setTestPopup(false)}
+          />
         </div>
       )}
     </div>

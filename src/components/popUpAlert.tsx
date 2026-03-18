@@ -1,9 +1,38 @@
-// Custom Popup Alert Component (add this to your components)
-const PopupAlert = ({ message, type, isVisible, onClose }) => {
+import React, { useEffect } from "react";
+
+interface PopupAlertProps {
+  message: string;
+  type?: "success" | "error" | "info";
+  isVisible: boolean;
+  onClose: () => void;
+  onConfirm?: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+const PopupAlert: React.FC<PopupAlertProps> = ({
+  message,
+  type = "info",
+  isVisible,
+  onClose,
+  onConfirm,
+  confirmLabel = "Yes",
+  cancelLabel = "Cancel",
+}) => {
   if (!isVisible) return null;
 
+  const showConfirm = typeof onConfirm === "function";
+
+  useEffect(() => {
+    if (isVisible) {
+      // debug log to help trace popup mounting
+      // eslint-disable-next-line no-console
+      console.log("PopupAlert visible", { type, message });
+    }
+  }, [isVisible, type, message]);
+
   return (
-    <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center z-999999 justify-center">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center" style={{ zIndex: 999999 }} role="dialog" aria-modal="true">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
         <div className="flex items-center mb-4">
           {type === "success" && (
@@ -41,16 +70,37 @@ const PopupAlert = ({ message, type, isVisible, onClose }) => {
             </div>
           )}
           <h3 className="text-lg font-semibold text-gray-900">
-            {type === "success" ? "Success!" : "Error!"}
+            {type === "success" ? "Success" : type === "error" ? "Warning" : "Notice"}
           </h3>
         </div>
         <p className="text-gray-600 mb-6">{message}</p>
-        <button
-          onClick={onClose}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          OK
-        </button>
+        <div className="flex gap-3">
+          {showConfirm ? (
+            <>
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                {cancelLabel}
+              </button>
+              <button
+                onClick={() => {
+                  onConfirm && onConfirm();
+                }}
+                className="flex-1 px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                {confirmLabel}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              OK
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

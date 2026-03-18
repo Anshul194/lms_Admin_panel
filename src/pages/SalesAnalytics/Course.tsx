@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourseSalesAnalytics } from "../../store/slices/salesAnalyticsSlice";
 import { RootState, AppDispatch } from "../../store";
+import PopupAlert from "../../components/popUpAlert";
+import { deleteCourse } from "../../store/slices/course";
 import {
   BarChart2,
   ShoppingCart,
@@ -48,6 +50,8 @@ const Course: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedCourse, setSelectedCourse] = useState<CourseData | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
 
   // Get token from localStorage or context - adjust as needed for your app
   const token = localStorage.getItem("token") || ""; // Replace with your token management logic
@@ -490,12 +494,21 @@ const Course: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white/90">
             Course Details
           </h2>
-          <button
-            onClick={() => setSelectedCourse(null)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <XCircle size={24} className="text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedCourse(null)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <XCircle size={24} className="text-gray-500" />
+            </button>
+            <button
+              onClick={() => selectedCourse && setDeleteConfirm({ id: selectedCourse._id, title: selectedCourse.title })}
+              className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              <XCircle size={16} />
+              Delete
+            </button>
+          </div>
         </div>
       </div>
 
@@ -565,6 +578,31 @@ const Course: React.FC = () => {
     </div>
   </div>
 )}
+
+      <PopupAlert
+        isVisible={!!deleteConfirm}
+        type="error"
+        message={`Are you sure you want to permanently delete "${deleteConfirm?.title}"? This action cannot be undone.`}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={async () => {
+          if (!deleteConfirm) return;
+          setDeletingCourse(true);
+          try {
+            await dispatch(deleteCourse({ id: deleteConfirm.id }) as any).unwrap();
+            // refresh analytics after deletion
+            dispatch(fetchCourseSalesAnalytics({ token }));
+            setDeleteConfirm(null);
+            setSelectedCourse(null);
+          } catch (e) {
+            // simple fallback alert
+            window.alert((e as any)?.message || 'Failed to delete course');
+          } finally {
+            setDeletingCourse(false);
+          }
+        }}
+        confirmLabel={deletingCourse ? "Deleting..." : "Delete"}
+        cancelLabel="Cancel"
+      />
 
       </div>
     </div>
