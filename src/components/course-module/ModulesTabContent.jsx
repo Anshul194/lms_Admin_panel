@@ -76,14 +76,28 @@ const ModulesTabContent = ({
             <div className="space-y-6">
                 {savedModules.map((module, index) => (
                     <div key={module._id || index} className="relative">
-                        {/* Edit Icon */}
-                        <button
-                            className="absolute top-2 right-2 z-10 p-2 rounded-full hover:bg-blue-100 transition"
-                            title="Edit Module"
-                            onClick={() => setEditModule(module)}
-                        >
-                            <Pencil className="w-5 h-5 text-blue-600" />
-                        </button>
+                        {/* Edit Icon - only shown when module has a valid ID */}
+                        {(module._id || module.id || module?.module?._id) && (
+                            <button
+                                type="button"
+                                className="absolute top-2 right-2 z-10 p-2 rounded-full hover:bg-blue-100 transition"
+                                title="Edit Module"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    // Flatten nested module structure so _id is always top-level
+                                    const flatModule = {
+                                        ...module?.module,
+                                        ...module,
+                                        _id: module._id || module.id || module?.module?._id,
+                                        id:  module._id || module.id || module?.module?._id,
+                                    };
+                                    setEditModule(flatModule);
+                                }}
+                            >
+                                <Pencil className="w-5 h-5 text-blue-600" />
+                            </button>
+                        )}
                         <SavedModuleDisplay
                             module={module}
                             courseId={courseId}
@@ -126,7 +140,7 @@ const ModulesTabContent = ({
                 )}
             </div>
             {/* Edit Module Popup */}
-            {editModule && (
+            {editModule && (editModule._id || editModule.id) && (
                 <EditModulePopup
                     module={editModule}
                     courseId={courseId}

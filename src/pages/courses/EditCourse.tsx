@@ -571,6 +571,10 @@ const EditCourse = () => {
         _id: module._id || undefined,
         title: module.title || "",
         description: module.description || "",
+        image: module.image || "",          // ← preserve module thumbnail
+        estimatedDuration: module.estimatedDuration || 60,
+        isPublished: module.isPublished || false,
+        courseId: module.courseId || courseId,
         lessons: (module.lessons || []).map((lesson) => ({
           _id: lesson._id || undefined,
           title: lesson.title || "",

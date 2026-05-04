@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { createModule } from "../../store/slices/module";
+
+const IMAGE_BASE_URL = import.meta.env.VITE_IMAGE_URL || "";
 import {
   createLesson,
   deleteLesson,
@@ -119,9 +121,11 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
     order: 1,
     estimatedDuration: 60,
     isPublished: true,
+    image: null, // New image field
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
   const [popup, setPopup] = useState<{
     message: string;
     type: "success" | "error";
@@ -131,6 +135,18 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
     type: "success",
     isVisible: false,
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setModuleData({ ...moduleData, image: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleCreateModule = async () => {
     if (!moduleData.title.trim()) {
@@ -152,6 +168,7 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
         order: moduleData.order,
         estimatedDuration: moduleData.estimatedDuration,
         isPublished: moduleData.isPublished,
+        image: moduleData.image, // Include image in payload
         token,
       };
 
@@ -174,7 +191,9 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
         order: moduleData.order + 1, // Increment order for next module
         estimatedDuration: 60,
         isPublished: true,
+        image: null,
       });
+      setImagePreview(null);
     } catch (error) {
       setPopup({
         message: "Failed to create module. Please try again.",
@@ -236,6 +255,57 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
               className="w-full px-4 py-3 border-2 dark:text-white/70 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
               rows={4}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-white/90 mb-2">
+              Module Thumbnail Image
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-blue-400 transition-colors duration-200">
+              <div className="space-y-1 text-center">
+                {imagePreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="mx-auto h-32 w-auto rounded-lg object-cover mb-4"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModuleData({ ...moduleData, image: null });
+                        setImagePreview(null);
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <Image className="mx-auto h-12 w-12 text-gray-400" />
+                )}
+                <div className="flex text-sm text-gray-600 justify-center">
+                  <label
+                    htmlFor="module-image-upload"
+                    className="relative cursor-pointer bg-white dark:bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                  >
+                    <span>Upload a file</span>
+                    <input
+                      id="module-image-upload"
+                      name="module-image-upload"
+                      type="file"
+                      className="sr-only"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                  <p className="pl-1 dark:text-white/70">or drag and drop</p>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-white/50">
+                  PNG, JPG, GIF up to 10MB
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1001,11 +1071,11 @@ const LessonEditor = ({
                       : ""
                   }`}
                 >
-                  <option value="video-lesson">🎬 Video Lesson</option>
-                  <option value="video">📹 File</option>
-                  <option value="text">📄 Text Lesson</option>
-                  <option value="quiz">❓ Quiz</option>
-                  <option value="assignment">📋 Assignment</option>
+                  <option value="video-lesson">ðŸŽ¬ Video Lesson</option>
+                  <option value="video">ðŸ“¹ File</option>
+                  <option value="text">ðŸ“„ Text Lesson</option>
+                  <option value="quiz">â“ Quiz</option>
+                  <option value="assignment">ðŸ“‹ Assignment</option>
                 </select>
                 {savedLessonId && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -1142,11 +1212,50 @@ const SavedModuleDisplay = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex sm:flex-row items-center sm:items-center justify-between gap-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            {module.title || module.module?.title || "Untitled Module"}
-          </h3>
+          {/* Left Side - Thumbnail + Module Info */}
+          <div className="flex items-center gap-3">
+            {/* Module Thumbnail */}
+            {(() => {
+              const imgSrc = module.image || module?.module?.image;
+              if (!imgSrc) return null;
+              
+              let src = "";
+              if (imgSrc.startsWith("http")) {
+                src = imgSrc;
+              } else {
+                // Handle absolute Windows paths (e.g. D:\...\uploads\...)
+                let cleanPath = imgSrc.replace(/\\/g, "/");
+                if (cleanPath.includes("/uploads/")) {
+                  cleanPath = cleanPath.substring(cleanPath.indexOf("/uploads/"));
+                } else if (cleanPath.includes("uploads/")) {
+                  cleanPath = "/" + cleanPath.substring(cleanPath.indexOf("uploads/"));
+                }
 
-          {/* Left Side - Module Info */}
+                // Use the origin of VITE_BASE_URL as base (e.g. http://localhost:5000)
+                let base = "";
+                try {
+                  const url = new URL(import.meta.env.VITE_BASE_URL);
+                  base = url.origin;
+                } catch (e) {
+                  base = (import.meta.env.VITE_BASE_URL || "").replace(/\/api\/v1\/?$/, "");
+                }
+
+                const path = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+                src = `${base}${path}`;
+              }
+              return (
+                <img
+                  src={src}
+                  alt={module.title || "Module thumbnail"}
+                  className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-gray-200 shadow-sm"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              );
+            })()}
+            <h3 className="text-lg font-medium text-gray-900">
+              {module.title || module.module?.title || "Untitled Module"}
+            </h3>
+          </div>
 
           <div className="flex items-center space-x-3">
             {/* Chevron Icon */}

@@ -24,6 +24,7 @@ export const createModule = createAsyncThunk(
             order,
             estimatedDuration,
             isPublished,
+            image, // New image field
             token,
         }: {
             courseId: string;
@@ -32,24 +33,30 @@ export const createModule = createAsyncThunk(
             order: number;
             estimatedDuration: number;
             isPublished: boolean;
+            image?: File | null;
             token: string;
         },
         { rejectWithValue }
     ) => {
         try {
+            const formData = new FormData();
+            formData.append('courseId', courseId);
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('order', order.toString());
+            formData.append('estimatedDuration', estimatedDuration.toString());
+            formData.append('isPublished', isPublished.toString());
+            
+            if (image) {
+                formData.append('image', image);
+            }
+
             const response = await axiosInstance.post(
-                '/module/',
-                {
-                    courseId,
-                    title,
-                    description,
-                    order,
-                    estimatedDuration,
-                    isPublished,
-                },
+                '/modules', // Updated to plural
+                formData,
                 {
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'multipart/form-data',
                     },
                 }
             );
@@ -72,6 +79,7 @@ export const updateModule = createAsyncThunk(
             order,
             estimatedDuration,
             isPublished,
+            image, // Added image field
         }: {
             moduleId: string;
             courseId: string;
@@ -80,23 +88,29 @@ export const updateModule = createAsyncThunk(
             order: number;
             estimatedDuration: number;
             isPublished: boolean;
+            image?: File | null;
         },
         { rejectWithValue }
     ) => {
         try {
+            const formData = new FormData();
+            formData.append('courseId', courseId);
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('order', order.toString());
+            formData.append('estimatedDuration', estimatedDuration.toString());
+            formData.append('isPublished', isPublished.toString());
+            
+            if (image) {
+                formData.append('image', image);
+            }
+
             const response = await axiosInstance.put(
-                `/module/${moduleId}`,
-                {
-                    courseId,
-                    title,
-                    description,
-                    order,
-                    estimatedDuration,
-                    isPublished,
-                },
+                `/modules/${moduleId}`, // Updated to plural
+                formData,
                 {
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'multipart/form-data',
                     },
                 }
             );
@@ -121,7 +135,7 @@ export const getModuleById = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const response = await axiosInstance.get(`/module/${moduleId}`, {
+            const response = await axiosInstance.get(`/modules/${moduleId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
