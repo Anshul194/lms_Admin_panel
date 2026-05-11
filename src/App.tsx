@@ -70,7 +70,9 @@ import AddNews from "./pages/News/AddNews";
 import EditNews from "./pages/News/EditNews";
 import ViewNews from "./pages/News/ViewNews";
 import ManageQuestions from "./pages/PersonalityTest/ManageQuestions";
+import ChatPage from "./pages/Chat/ChatPage";
 import AITool from "./pages/AITool/AITool";
+import SecurityIncidents from "./pages/Security/Incidents";
 
 // Lazy load pages
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
@@ -305,6 +307,8 @@ export default function App() {
               <Route path="/queries/all" element={<QueryList />} />
 
 
+              <Route path="/security/incidents" element={<SecurityIncidents />} />
+
               {/* User Profiles */}
 
               {/* Tables */}
@@ -323,12 +327,14 @@ export default function App() {
               <Route path="/device-approvals" element={<DeviceApprovals />} />
               {/* Testimonials */}
               <Route path="/testimonials" element={<TestimonialsPage />} />
+              <Route path="/chat" element={<ChatPage />} />
               <Route path="/ai-tool" element={<AITool />} />
               {/* Charts */}
               <Route path="/line-chart" element={<LineChart />} />
               <Route path="/bar-chart" element={<BarChart />} />
               <Route path="/leaderboard-setting" element={<LeaderboardSetting />} />
               <Route path="/personality-test" element={<ManageQuestions />} />
+              <Route path="/security-incidents" element={<SecurityIncidents />} />
             </Route>
           </Route>
 

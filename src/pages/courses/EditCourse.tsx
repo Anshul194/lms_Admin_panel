@@ -234,6 +234,8 @@ const EditCourse = () => {
   const [customTag, setCustomTag] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [coverImageFile, setCoverImageFile] = useState(null);
+  const [verticalCarouselImageFile, setVerticalCarouselImageFile] = useState(null);
+  const [featuredImageBannerFile, setFeaturedImageBannerFile] = useState(null);
   const [demoVideoUrl, setDemoVideoUrl] = useState("");
   const [description, setDescription] = useState("");
   const [seoContent, setSeoContent] = useState("");
@@ -437,6 +439,8 @@ const EditCourse = () => {
         thumbnail: course.thumbnail || "",
         demoVideo: course.demoVideo || "",
         coverImage: course.coverImage || "",
+        verticalCarouselImage: course.verticalCarouselImage || "",
+        featuredImageBanner: course.featuredImageBanner || "",
         categoryId:
           course.categoryId ||
           course.category?._id ||
@@ -729,7 +733,7 @@ const EditCourse = () => {
   const handleSubmit = async (e, isDraft = false) => {
     e.preventDefault();
 
-    const files = { thumbnailFile, coverImageFile };
+    const files = { thumbnailFile, coverImageFile, verticalCarouselImageFile, featuredImageBannerFile };
     const errors = validateForm(
       formData,
       description,
@@ -831,6 +835,9 @@ const EditCourse = () => {
     if (formData.certificateImageFile) {
       submitFormData.set("certificateImage", formData.certificateImageFile);
     }
+
+    if (verticalCarouselImageFile) submitFormData.set("verticalCarouselImage", verticalCarouselImageFile);
+    if (featuredImageBannerFile) submitFormData.set("featuredImageBanner", featuredImageBannerFile);
 
     if (thumbnailFile) submitFormData.set("thumbnail", thumbnailFile);
     if (coverImageFile) submitFormData.set("coverImage", coverImageFile);
@@ -1248,7 +1255,7 @@ const EditCourse = () => {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Media Files</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FileUpload
-                      label="Course Thumbnail *"
+                      label="Thumbnail Image *"
                       accept="image/*"
                       onFileChange={setThumbnailFile}
                       currentFile={thumbnailFile}
@@ -1262,51 +1269,42 @@ const EditCourse = () => {
                       icon={Image}
                     />
                   </div>
-                  {formErrors.thumbnailFile && (
-                    <p className="text-xs text-red-600">
-                      {formErrors.thumbnailFile}
-                    </p>
-                  )}
-                  {(formData.thumbnail || formData.coverImage) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {formData.thumbnail && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                            Current Thumbnail
-                          </h4>
-                          <img
-                            src={`${baseUrl}/${formData.thumbnail}`}
-                            alt="Current thumbnail"
-                            className="w-full h-40 object-cover rounded-lg border dark:border-gray-600"
-                          />
-                        </div>
-                      )}
-                      {formData.coverImage && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                            Current Cover Image
-                          </h4>
-                          <img
-                            src={`${baseUrl}/${formData.coverImage}`}
-                            alt="Current cover"
-                            className="w-full h-40 object-cover rounded-lg border dark:border-gray-600"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FileUpload
+                      label="Vertical Carousel Image"
+                      accept="image/*"
+                      onFileChange={setVerticalCarouselImageFile}
+                      currentFile={verticalCarouselImageFile}
+                      icon={Image}
+                    />
+                    <FileUpload
+                      label="Featured Image Banner"
+                      accept="image/*"
+                      onFileChange={setFeaturedImageBannerFile}
+                      currentFile={featuredImageBannerFile}
+                      icon={Image}
+                    />
+                  </div>
                   <YouTubeUrlInput
-                    label="Demo Video (YouTube URL)"
+                    label="Demo Video URL"
                     value={demoVideoUrl}
-                    onChange={(e) => {
-                      setDemoVideoUrl(e.target.value);
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        demoVideoUrl: "",
-                      }));
-                    }}
+                    onChange={(e) => setDemoVideoUrl(e.target.value)}
                     error={formErrors.demoVideoUrl}
                   />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {formData.thumbnail && !thumbnailFile && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Thumbnail</p>
+                        <img src={`${baseUrl}${formData.thumbnail}`} alt="Thumbnail" className="w-full h-auto rounded-lg" />
+                      </div>
+                    )}
+                    {formData.coverImage && !coverImageFile && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Cover Image</p>
+                        <img src={`${baseUrl}${formData.coverImage}`} alt="Cover" className="w-full h-auto rounded-lg" />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

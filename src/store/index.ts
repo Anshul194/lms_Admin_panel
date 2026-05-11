@@ -32,6 +32,8 @@ import job from "./slices/job";
 import leaderboard from "./slices/leaderboard";
 import banner from "./slices/banner";
 import news from "./slices/news";
+import securityReducer from "./slices/securitySlice";
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -65,7 +67,8 @@ export const store = configureStore({
     job:job,
     leaderboard:leaderboard,
     banner:banner,
-    news:news
+    news:news,
+    security: securityReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -115,6 +115,11 @@ const navItems: NavItem[] = [
     path: "/requests"
   },
   {
+    icon: <MessageCircle />,
+    name: "Chat",
+    path: "/chat"
+  },
+  {
     icon: <Tag />,
     name: "Coupons",
     path: "/coupons/all"
@@ -143,6 +148,13 @@ const navItems: NavItem[] = [
     icon: <TaskIcon />,
     name: "Personality Test",
     path: "/personality-test"
+  },
+  {
+    icon: <PageIcon />,
+    name: "Security",
+    subItems: [
+      { name: "Incidents", path: "/security/incidents" },
+    ],
   },
   // {
   //   icon: <Files />,

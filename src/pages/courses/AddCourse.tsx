@@ -61,7 +61,7 @@ const validateForm = (
   description: string,
   seoContent: string,
   selectedTags: string[],
-  files: { thumbnailFile: File | null; coverImageFile: File | null },
+  files: { thumbnailFile: File | null; coverImageFile: File | null; verticalCarouselImageFile: File | null; featuredImageBannerFile: File | null },
   demoVideoUrl: string
 ): FormErrors => {
   const errors: FormErrors = {};
@@ -570,7 +570,7 @@ const AddCourse = () => {
   const handleSubmit = async (e: React.FormEvent, isDraft = false) => {
     e.preventDefault();
 
-    const files = { thumbnailFile, coverImageFile };
+    const files = { thumbnailFile, coverImageFile, verticalCarouselImageFile, featuredImageBannerFile };
     const errors = validateForm(
       formData,
       description,
