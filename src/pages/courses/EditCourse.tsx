@@ -271,6 +271,7 @@ const EditCourse = () => {
     courseForum: true,
     isSubscription: false,
     isPrivate: false,
+    isFeatured: false,
     enableWaitlist: false,
     coursePosition: "",
     // Mentor fields
@@ -480,6 +481,7 @@ const EditCourse = () => {
           course.courseForum !== undefined ? course.courseForum : true,
         isSubscription: course.isSubscription || false,
         isPrivate: course.isPrivate || false,
+        isFeatured: course.isFeatured || false,
         enableWaitlist: course.enableWaitlist || false,
         coursePosition: course.coursePosition || "",
         // Mentor fields
@@ -1572,6 +1574,19 @@ const EditCourse = () => {
                         <Lock className="w-4 h-4 text-blue-600" />
                         <span className="text-sm text-gray-700 dark:text-gray-200">
                           Private Course
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="isFeatured"
+                          checked={formData.isFeatured}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-yellow-500 border-gray-300 dark:border-gray-600 rounded focus:ring-yellow-500"
+                        />
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Featured Course
                         </span>
                       </label>
                       <label className="flex items-center gap-2">
