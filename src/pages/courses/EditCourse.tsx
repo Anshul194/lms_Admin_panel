@@ -33,12 +33,14 @@ import {
   Layers,
   Sparkles,
   Target,
+  Star,
 } from "lucide-react";
 import ModuleSection from "./ModuleSection";
 import Faqs from "./components/Faqs";
 import QuillEditor from "../../components/QuillEditor";
 import Editor from "../../components/Editor";
 import LandingPageSections from "./LandingPageSections";
+import AddReview from "./AddReview";
 
 const baseUrl = import.meta.env.VITE_BASE_URL || "https://api.edrilla.com/";
 
@@ -227,6 +229,7 @@ const EditCourse = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("basic");
+  console.log('Active Tab:', activeTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // For mobile sidebar toggle
 
   // Course state (unchanged)
@@ -503,8 +506,6 @@ const EditCourse = () => {
         certificateIssuerTitle: course.certificateIssuerTitle || "",
         certificateOrganization: course.certificateOrganization || "Lapaas LMS",
         certificateDescription: course.certificateDescription || "",
-        // accessType: course.accessType || "lifetime",
-        // accessPeriod: course.accessPeriod || "",
         // Enhanced Landing Page Sections
         landingPageSections: (course.landingPageSections && course.landingPageSections.length > 0)
           ? course.landingPageSections.map((s: any, i: number) => ({
@@ -910,6 +911,7 @@ const EditCourse = () => {
     { key: "landingPage", title: "Landing Page Sections", icon: Layout, isRequired: false },
     { key: "certificate", title: "Certificate", icon: Award, isRequired: false },
     { key: "publication", title: "Publication Status", icon: Eye, isRequired: false },
+    { key: "reviews", title: "Reviews", icon: Star, isRequired: false },
   ];
 
   return (
@@ -996,1211 +998,1215 @@ const EditCourse = () => {
             </div>
           )}
 
-          <form onSubmit={(e) => handleSubmit(e, false)}>
-            {/* Tab Content */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              {activeTab === "basic" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Basic Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+          {activeTab === "reviews" ? (
+            <AddReview />
+          ) : (
+            <form onSubmit={(e) => handleSubmit(e, false)}>
+              {/* Tab Content */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                {activeTab === "basic" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Course Title *
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          value={formData.title}
+                          onChange={handleInputChange}
+                          className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.title
+                            ? "border-red-400"
+                            : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          placeholder="Enter course title"
+                          required
+                        />
+                        {formErrors.title && (
+                          <p className="mt-1 text-xs text-red-600">
+                            {formErrors.title}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Course Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          name="subtitle"
+                          value={formData.subtitle}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:text-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter course subtitle"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Course Title *
+                        Course Position
                       </label>
                       <input
-                        type="text"
-                        name="title"
-                        value={formData.title}
+                        type="number"
+                        name="coursePosition"
+                        value={formData.coursePosition}
                         onChange={handleInputChange}
-                        className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.title
+                        min={0}
+                        className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.coursePosition
                           ? "border-red-400"
                           : "border-gray-300 dark:border-gray-600"
                           }`}
-                        placeholder="Enter course title"
-                        required
+                        placeholder="Enter course position (numeric)"
                       />
-                      {formErrors.title && (
-                        <p className="mt-1 text-xs text-red-600">
-                          {formErrors.title}
-                        </p>
+                      {formErrors.coursePosition && (
+                        <p className="mt-1 text-xs text-red-600">{formErrors.coursePosition}</p>
                       )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Course Subtitle
+                        Course Description *
                       </label>
-                      <input
-                        type="text"
-                        name="subtitle"
-                        value={formData.subtitle}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:text-gray-200 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter course subtitle"
+                      <QuillEditor
+                        value={description}
+                        onChange={setDescription}
+                        placeholder="Describe your course in detail..."
                       />
+                      {formErrors.description && (
+                        <p className="mt-2 text-xs text-red-600">
+                          {formErrors.description}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Course Position
-                    </label>
-                    <input
-                      type="number"
-                      name="coursePosition"
-                      value={formData.coursePosition}
-                      onChange={handleInputChange}
-                      min={0}
-                      className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.coursePosition
-                        ? "border-red-400"
-                        : "border-gray-300 dark:border-gray-600"
-                        }`}
-                      placeholder="Enter course position (numeric)"
-                    />
-                    {formErrors.coursePosition && (
-                      <p className="mt-1 text-xs text-red-600">{formErrors.coursePosition}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Course Description *
-                    </label>
-                    <QuillEditor
-                      value={description}
-                      onChange={setDescription}
-                      placeholder="Describe your course in detail..."
-                    />
-                    {formErrors.description && (
-                      <p className="mt-2 text-xs text-red-600">
-                        {formErrors.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {activeTab === "details" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Details</h3>
-                  <CategorySubcategoryDropdowns
-                    selectedCategoryId={formData.categoryId}
-                    selectedSubcategoryId={formData.subCategoryId}
-                    onCategoryChange={handleCategoryChange}
-                    onSubcategoryChange={handleSubcategoryChange}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Level
-                      </label>
-                      <select
-                        name="level"
-                        value={typeof formData.level == "string" && formData.level ? formData.level : "beginner"}
-                        onChange={handleInputChange}
-                        className="w-full border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Duration (mins) *
-                      </label>
-                      <input
-                        type="number"
-                        name="duration"
-                        value={formData.duration}
-                        onChange={handleInputChange}
-                        className={`w-full border dark:text-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300 dark:border-gray-600`}
-                        placeholder="Enter duration in minutes"
-                        min={1}
-                        step={1}
-                        onWheel={(e) => e.currentTarget.blur()}
-                        onInput={(e) => {
-                          const value = e.currentTarget.value;
-                          if (value && value.includes(".")) {
-                            e.currentTarget.value = value.split(".")[0];
-                          }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-blue-600" />
-                        Enrolled Students Count
-                      </label>
-                      <input
-                        type="number"
-                        name="enrolledStudentsCount"
-                        value={formData.enrolledStudentsCount}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "" || /^\d+$/.test(value)) {
-                            handleInputChange(e);
-                          }
-                        }}
-                        step="1"
-                        min="0"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Number of enrolled students"
-                        onWheel={(e) => e.currentTarget.blur()}
-                        onInput={(e) => {
-                          const value = e.currentTarget.value;
-                          if (value && value.includes(".")) {
-                            e.currentTarget.value = value.split(".")[0];
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Learning Outcomes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      What You'll Learn (Learning Outcomes)
-                    </label>
-                    <div className="space-y-2">
-                      {(formData.learningOutcomes || []).map((outcome, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={outcome}
-                            onChange={(e) => {
-                              const updated = [...(formData.learningOutcomes || [])];
-                              updated[index] = e.target.value;
-                              setFormData({ ...formData, learningOutcomes: updated });
-                            }}
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter learning outcome"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = (formData.learningOutcomes || []).filter((_, i) => i !== index);
-                              setFormData({ ...formData, learningOutcomes: updated });
-                            }}
-                            className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            learningOutcomes: [...(formData.learningOutcomes || []), ""]
-                          });
-                        }}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Learning Outcome
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Target Audience */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Who This Course Is For (Target Audience)
-                    </label>
-                    <div className="space-y-2">
-                      {(formData.targetAudience || []).map((audience, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={audience}
-                            onChange={(e) => {
-                              const updated = [...(formData.targetAudience || [])];
-                              updated[index] = e.target.value;
-                              setFormData({ ...formData, targetAudience: updated });
-                            }}
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter target audience"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = (formData.targetAudience || []).filter((_, i) => i !== index);
-                              setFormData({ ...formData, targetAudience: updated });
-                            }}
-                            className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            targetAudience: [...(formData.targetAudience || []), ""]
-                          });
-                        }}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Target Audience
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "media" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Media Files</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FileUpload
-                      label="Thumbnail Image *"
-                      accept="image/*"
-                      onFileChange={setThumbnailFile}
-                      currentFile={thumbnailFile}
-                      icon={Image}
+                {activeTab === "details" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Details</h3>
+                    <CategorySubcategoryDropdowns
+                      selectedCategoryId={formData.categoryId}
+                      selectedSubcategoryId={formData.subCategoryId}
+                      onCategoryChange={handleCategoryChange}
+                      onSubcategoryChange={handleSubcategoryChange}
                     />
-                    <FileUpload
-                      label="Cover Image"
-                      accept="image/*"
-                      onFileChange={setCoverImageFile}
-                      currentFile={coverImageFile}
-                      icon={Image}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FileUpload
-                      label="Vertical Carousel Image"
-                      accept="image/*"
-                      onFileChange={setVerticalCarouselImageFile}
-                      currentFile={verticalCarouselImageFile}
-                      icon={Image}
-                    />
-                    <FileUpload
-                      label="Featured Image Banner"
-                      accept="image/*"
-                      onFileChange={setFeaturedImageBannerFile}
-                      currentFile={featuredImageBannerFile}
-                      icon={Image}
-                    />
-                  </div>
-                  <YouTubeUrlInput
-                    label="Demo Video URL"
-                    value={demoVideoUrl}
-                    onChange={(e) => setDemoVideoUrl(e.target.value)}
-                    error={formErrors.demoVideoUrl}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {formData.thumbnail && !thumbnailFile && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Thumbnail</p>
-                        <img src={`${baseUrl}${formData.thumbnail}`} alt="Thumbnail" className="w-full h-auto rounded-lg" />
-                      </div>
-                    )}
-                    {formData.coverImage && !coverImageFile && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Cover Image</p>
-                        <img src={`${baseUrl}${formData.coverImage}`} alt="Cover" className="w-full h-auto rounded-lg" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "pricing" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Pricing</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        Price *
-                      </label>
-                      <input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (
-                            value === "" ||
-                            /^\d+(\.\d{0,2})?$/.test(value)
-                          ) {
-                            handleInputChange(e);
-                          }
-                        }}
-                        className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.price ? "border-red-400" : "border-gray-300 dark:border-gray-600"
-                          }`}
-                        placeholder="Enter price"
-                        required
-                        step="0.01"
-                        min="0"
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                      {formErrors.price && (
-                        <p className="mt-1 text-xs text-red-600">
-                          {formErrors.price}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        Sale Price
-                      </label>
-                      <input
-                        type="number"
-                        name="salePrice"
-                        value={formData.salePrice}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (
-                            value === "" ||
-                            /^\d+(\.\d{0,2})?$/.test(value)
-                          ) {
-                            handleInputChange(e);
-                          }
-                        }}
-                        className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.salePrice ? "border-red-400" : "border-gray-300 dark:border-gray-600"
-                          }`}
-                        placeholder="Enter Sale price"
-                        required
-                        step="0.01"
-                        min="0"
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                      {formErrors.salePrice && (
-                        <p className="mt-1 text-xs text-red-600">
-                          {formErrors.salePrice}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Currency
-                      </label>
-                      <select
-                        name="currency"
-                        value={formData.currency}
-                        onChange={handleInputChange}
-                        className="w-full border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option className="dark:text-black" value="INR">
-                          INR (₹)
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                  {/* --- Plans Section --- */}
-                  <div className="mt-8">
-                    <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                      Course Plans
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-2">
-                      <input
-                        type="text"
-                        placeholder="Plan Name"
-                        value={planForm.name}
-                        onChange={e => setPlanForm({ ...planForm, name: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price"
-                        value={planForm.price}
-                        onChange={e => setPlanForm({ ...planForm, price: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Description"
-                        value={planForm.description}
-                        onChange={e => setPlanForm({ ...planForm, description: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      />
-                      <select
-                        value={planForm.durationType}
-                        onChange={e => setPlanForm({ ...planForm, durationType: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      >
-                        <option value="Month">Month</option>
-                        <option value="Year">Year</option>
-                        <option value="Day">Day</option>
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Duration"
-                        value={planForm.duration}
-                        onChange={e => setPlanForm({ ...planForm, duration: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Sale Price"
-                        value={planForm.salePrice}
-                        onChange={e => setPlanForm({ ...planForm, salePrice: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      />
-                      <select
-                        value={planForm.status}
-                        onChange={e => setPlanForm({ ...planForm, status: e.target.value })}
-                        className="border rounded px-2 py-2 text-sm"
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddOrUpdatePlan}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                    >
-                      {editingPlanIdx !== null ? "Update Plan" : "Add Plan"}
-                    </button>
-                    {planFormError && (
-                      <div className="text-xs text-red-600 mt-1">{planFormError}</div>
-                    )}
-                    {plans.length > 0 && (
-                      <div className="mt-4">
-                        <table className="w-full text-sm border">
-                          <thead>
-                            <tr className="bg-gray-100 dark:bg-gray-700">
-                              <th className="p-2">Name</th>
-                              <th className="p-2">Price</th>
-                              <th className="p-2">Description</th>
-                              <th className="p-2">Duration Type</th>
-                              <th className="p-2">Duration</th>
-                              <th className="p-2">Sale Price</th>
-                              <th className="p-2">Status</th>
-                              <th className="p-2"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {plans.map((plan, idx) => (
-                              <tr key={idx}>
-                                <td className="p-2">{plan.name}</td>
-                                <td className="p-2">{plan.price}</td>
-                                <td className="p-2">{plan.description}</td>
-                                <td className="p-2">{plan.durationType}</td>
-                                <td className="p-2">{plan.duration}</td>
-                                <td className="p-2">{plan.salePrice}</td>
-                                <td className="p-2">{plan.status}</td>
-                                <td className="p-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleEditPlan(idx)}
-                                    className="text-blue-500 hover:underline mr-2"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemovePlan(idx)}
-                                    className="text-red-500 hover:underline"
-                                  >
-                                    Remove
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                  {/* --- End Plans Section --- */}
-                </div>
-              )}
-
-              {activeTab === "features" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Features</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="certificateTemplate"
-                        checked={formData.certificateTemplate}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <Award className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Certificate Available
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="isDownloadable"
-                        checked={formData.isDownloadable}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <Download className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Downloadable Content
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="courseForum"
-                        checked={formData.courseForum}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <MessageCircle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Course Forum
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="isPrivate"
-                        checked={formData.isPrivate}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <Lock className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Private Course
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="enableWaitlist"
-                        checked={formData.enableWaitlist}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                      />
-                      <Users className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Enable Waitlist
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "tags" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Tags</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
-                      <Tag className="w-4 h-4" />
-                      Course Tags *
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {predefinedTags.map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => addTag(tag)}
-                          className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag)
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                            }`}
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Level
+                        </label>
+                        <select
+                          name="level"
+                          value={typeof formData.level == "string" && formData.level ? formData.level : "beginner"}
+                          onChange={handleInputChange}
+                          className="w-full border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
-                          {tag}
-                        </button>
-                      ))}
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="advanced">Advanced</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Duration (mins) *
+                        </label>
+                        <input
+                          type="number"
+                          name="duration"
+                          value={formData.duration}
+                          onChange={handleInputChange}
+                          className={`w-full border dark:text-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent border-gray-300 dark:border-gray-600`}
+                          placeholder="Enter duration in minutes"
+                          min={1}
+                          step={1}
+                          onWheel={(e) => e.currentTarget.blur()}
+                          onInput={(e) => {
+                            const value = e.currentTarget.value;
+                            if (value && value.includes(".")) {
+                              e.currentTarget.value = value.split(".")[0];
+                            }
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-blue-600" />
+                          Enrolled Students Count
+                        </label>
+                        <input
+                          type="number"
+                          name="enrolledStudentsCount"
+                          value={formData.enrolledStudentsCount}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "" || /^\d+$/.test(value)) {
+                              handleInputChange(e);
+                            }
+                          }}
+                          step="1"
+                          min="0"
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Number of enrolled students"
+                          onWheel={(e) => e.currentTarget.blur()}
+                          onInput={(e) => {
+                            const value = e.currentTarget.value;
+                            if (value && value.includes(".")) {
+                              e.currentTarget.value = value.split(".")[0];
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={customTag}
-                        onChange={(e) => setCustomTag(e.target.value)}
-                        className="flex-1 border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Add custom tag"
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addCustomTag();
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomTag}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    {formErrors.tags && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {formErrors.tags}
-                      </p>
-                    )}
-                  </div>
-                  {selectedTags.length > 0 && (
+
+                    {/* Learning Outcomes */}
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Selected Tags:
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm"
-                          >
-                            {tag}
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        What You'll Learn (Learning Outcomes)
+                      </label>
+                      <div className="space-y-2">
+                        {(formData.learningOutcomes || []).map((outcome, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={outcome}
+                              onChange={(e) => {
+                                const updated = [...(formData.learningOutcomes || [])];
+                                updated[index] = e.target.value;
+                                setFormData({ ...formData, learningOutcomes: updated });
+                              }}
+                              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter learning outcome"
+                            />
                             <button
                               type="button"
-                              onClick={() => removeTag(tag)}
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                              onClick={() => {
+                                const updated = (formData.learningOutcomes || []).filter((_, i) => i !== index);
+                                setFormData({ ...formData, learningOutcomes: updated });
+                              }}
+                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="w-4 h-4" />
                             </button>
-                          </span>
+                          </div>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              learningOutcomes: [...(formData.learningOutcomes || []), ""]
+                            });
+                          }}
+                          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Learning Outcome
+                        </button>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
 
-              {activeTab === "seo" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">SEO Content</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      SEO Meta Description
-                    </label>
-                    <textarea
-                      name="seoMetaDescription"
-                      value={formData.seoMetaDescription}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className={`w-full border dark:text-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.seoMetaDescription
-                        ? "border-red-400"
-                        : "border-gray-300 dark:border-gray-600"
-                        }`}
-                      placeholder="Enter meta description for search engines (max 160 characters)"
-                      maxLength={160}
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {formData.seoMetaDescription.length}/160 characters
-                    </p>
-                    {formErrors.seoMetaDescription && (
-                      <p className="mt-1 text-xs text-red-600">
-                        {formErrors.seoMetaDescription}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      SEO Content
-                    </label>
-                    <QuillEditor
-                      value={seoContent}
-                      onChange={setSeoContent}
-                      placeholder="Add SEO-friendly content for better search rankings..."
-                    />
-                    {formErrors.seoContent && (
-                      <p className="mt-2 text-xs text-red-600">
-                        {formErrors.seoContent}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "modules" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Modules</h3>
-                  {console?.log("modules 0987", modules)}
-                  <ModuleSection
-                    modules={modules}
-                    onModulesChange={handleModulesChange}
-                    courseId={courseId}
-                  />
-                </div>
-              )}
-
-              {activeTab === "faqs" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">FAQs</h3>
-                  <Faqs courseId={courseId} />
-                </div>
-              )}
-
-              {activeTab === "mentor" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mentor Information</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Target Audience */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Mentor Name
+                        Who This Course Is For (Target Audience)
                       </label>
-                      <input
-                        type="text"
-                        name="mentorName"
-                        value={formData.mentorName || ""}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter mentor name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Mentor Title
-                      </label>
-                      <input
-                        type="text"
-                        name="mentorTitle"
-                        value={formData.mentorTitle || ""}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., Digital Marketing Expert"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Mentor Description
-                    </label>
-                    <QuillEditor
-                      value={formData.mentorDescription || ""}
-                      onChange={(value) => setFormData({ ...formData, mentorDescription: value })}
-                      placeholder="Enter mentor description"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Mentor Image
-                    </label>
-                    <FileUpload
-                      label="Upload Mentor Image"
-                      accept="image/*"
-                      onFileChange={(file) => {
-                        // Handle file upload - you may need to upload it first
-                        setFormData({ ...formData, mentorImageFile: file });
-                      }}
-                      currentFile={formData.mentorImageFile || null}
-                      icon={Image}
-                    />
-                    {formData.mentorImage && (
-                      <div className="mt-4">
-                        <img
-                          src={`${baseUrl}/${formData.mentorImage}`}
-                          alt="Current mentor image"
-                          className="w-32 h-32 object-cover rounded-lg border dark:border-gray-600"
-                        />
+                      <div className="space-y-2">
+                        {(formData.targetAudience || []).map((audience, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={audience}
+                              onChange={(e) => {
+                                const updated = [...(formData.targetAudience || [])];
+                                updated[index] = e.target.value;
+                                setFormData({ ...formData, targetAudience: updated });
+                              }}
+                              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter target audience"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (formData.targetAudience || []).filter((_, i) => i !== index);
+                                setFormData({ ...formData, targetAudience: updated });
+                              }}
+                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              targetAudience: [...(formData.targetAudience || []), ""]
+                            });
+                          }}
+                          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Target Audience
+                        </button>
                       </div>
-                    )}
+                    </div>
                   </div>
+                )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Mentor Achievements
-                    </label>
-                    <div className="space-y-2">
-                      {(formData.mentorAchievements || []).map((achievement, index) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={achievement}
-                            onChange={(e) => {
-                              const updated = [...(formData.mentorAchievements || [])];
-                              updated[index] = e.target.value;
-                              setFormData({ ...formData, mentorAchievements: updated });
-                            }}
-                            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter achievement"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = (formData.mentorAchievements || []).filter((_, i) => i !== index);
-                              setFormData({ ...formData, mentorAchievements: updated });
-                            }}
-                            className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                {activeTab === "media" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Media Files</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FileUpload
+                        label="Thumbnail Image *"
+                        accept="image/*"
+                        onFileChange={setThumbnailFile}
+                        currentFile={thumbnailFile}
+                        icon={Image}
+                      />
+                      <FileUpload
+                        label="Cover Image"
+                        accept="image/*"
+                        onFileChange={setCoverImageFile}
+                        currentFile={coverImageFile}
+                        icon={Image}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FileUpload
+                        label="Vertical Carousel Image"
+                        accept="image/*"
+                        onFileChange={setVerticalCarouselImageFile}
+                        currentFile={verticalCarouselImageFile}
+                        icon={Image}
+                      />
+                      <FileUpload
+                        label="Featured Image Banner"
+                        accept="image/*"
+                        onFileChange={setFeaturedImageBannerFile}
+                        currentFile={featuredImageBannerFile}
+                        icon={Image}
+                      />
+                    </div>
+                    <YouTubeUrlInput
+                      label="Demo Video URL"
+                      value={demoVideoUrl}
+                      onChange={(e) => setDemoVideoUrl(e.target.value)}
+                      error={formErrors.demoVideoUrl}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {formData.thumbnail && !thumbnailFile && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Thumbnail</p>
+                          <img src={`${baseUrl}${formData.thumbnail}`} alt="Thumbnail" className="w-full h-auto rounded-lg" />
                         </div>
-                      ))}
+                      )}
+                      {formData.coverImage && !coverImageFile && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Cover Image</p>
+                          <img src={`${baseUrl}${formData.coverImage}`} alt="Cover" className="w-full h-auto rounded-lg" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "pricing" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Pricing</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          Price *
+                        </label>
+                        <input
+                          type="number"
+                          name="price"
+                          value={formData.price}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (
+                              value === "" ||
+                              /^\d+(\.\d{0,2})?$/.test(value)
+                            ) {
+                              handleInputChange(e);
+                            }
+                          }}
+                          className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.price ? "border-red-400" : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          placeholder="Enter price"
+                          required
+                          step="0.01"
+                          min="0"
+                          onWheel={(e) => e.currentTarget.blur()}
+                        />
+                        {formErrors.price && (
+                          <p className="mt-1 text-xs text-red-600">
+                            {formErrors.price}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          Sale Price
+                        </label>
+                        <input
+                          type="number"
+                          name="salePrice"
+                          value={formData.salePrice}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (
+                              value === "" ||
+                              /^\d+(\.\d{0,2})?$/.test(value)
+                            ) {
+                              handleInputChange(e);
+                            }
+                          }}
+                          className={`w-full border rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.salePrice ? "border-red-400" : "border-gray-300 dark:border-gray-600"
+                            }`}
+                          placeholder="Enter Sale price"
+                          required
+                          step="0.01"
+                          min="0"
+                          onWheel={(e) => e.currentTarget.blur()}
+                        />
+                        {formErrors.salePrice && (
+                          <p className="mt-1 text-xs text-red-600">
+                            {formErrors.salePrice}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Currency
+                        </label>
+                        <select
+                          name="currency"
+                          value={formData.currency}
+                          onChange={handleInputChange}
+                          className="w-full border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option className="dark:text-black" value="INR">
+                            INR (₹)
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    {/* --- Plans Section --- */}
+                    <div className="mt-8">
+                      <h4 className="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                        Course Plans
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-2">
+                        <input
+                          type="text"
+                          placeholder="Plan Name"
+                          value={planForm.name}
+                          onChange={e => setPlanForm({ ...planForm, name: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Price"
+                          value={planForm.price}
+                          onChange={e => setPlanForm({ ...planForm, price: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={planForm.description}
+                          onChange={e => setPlanForm({ ...planForm, description: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        />
+                        <select
+                          value={planForm.durationType}
+                          onChange={e => setPlanForm({ ...planForm, durationType: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        >
+                          <option value="Month">Month</option>
+                          <option value="Year">Year</option>
+                          <option value="Day">Day</option>
+                        </select>
+                        <input
+                          type="number"
+                          placeholder="Duration"
+                          value={planForm.duration}
+                          onChange={e => setPlanForm({ ...planForm, duration: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Sale Price"
+                          value={planForm.salePrice}
+                          onChange={e => setPlanForm({ ...planForm, salePrice: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        />
+                        <select
+                          value={planForm.status}
+                          onChange={e => setPlanForm({ ...planForm, status: e.target.value })}
+                          className="border rounded px-2 py-2 text-sm"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            mentorAchievements: [...(formData.mentorAchievements || []), ""]
-                          });
-                        }}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                        onClick={handleAddOrUpdatePlan}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                       >
-                        <Plus className="w-4 h-4" />
-                        Add Achievement
+                        {editingPlanIdx !== null ? "Update Plan" : "Add Plan"}
                       </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Social Links
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">LinkedIn</label>
-                        <input
-                          type="url"
-                          value={formData.mentorSocialLinks?.linkedin || ""}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            mentorSocialLinks: {
-                              ...(formData.mentorSocialLinks || {}),
-                              linkedin: e.target.value
-                            }
-                          })}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://linkedin.com/in/..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">YouTube</label>
-                        <input
-                          type="url"
-                          value={formData.mentorSocialLinks?.youtube || ""}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            mentorSocialLinks: {
-                              ...(formData.mentorSocialLinks || {}),
-                              youtube: e.target.value
-                            }
-                          })}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://youtube.com/..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Twitter</label>
-                        <input
-                          type="url"
-                          value={formData.mentorSocialLinks?.twitter || ""}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            mentorSocialLinks: {
-                              ...(formData.mentorSocialLinks || {}),
-                              twitter: e.target.value
-                            }
-                          })}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://twitter.com/..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Website</label>
-                        <input
-                          type="url"
-                          value={formData.mentorSocialLinks?.website || ""}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            mentorSocialLinks: {
-                              ...(formData.mentorSocialLinks || {}),
-                              website: e.target.value
-                            }
-                          })}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                          placeholder="https://example.com"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "landingPage" && (
-                <LandingPageSections formData={formData} setFormData={setFormData} />
-              )}
-
-              {activeTab === "certificate" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Certificate Settings</h3>
-
-                  {/* Certificate Preview */}
-                  {!formData.certificateImage && (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Certificate Preview
-                      </label>
-                      <div className="w-full max-w-4xl mx-auto bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-2xl p-8 border-4 border-amber-300">
-                        {/* Certificate Header */}
-                        <div className="bg-red-600 text-white py-4 px-6 rounded-t-lg mb-6">
-                          <h3 className="text-2xl font-bold">
-                            {(formData as any).certificateTitle || "Certificate of Completion"}
-                          </h3>
-                          <p className="text-red-200 text-sm mt-1">
-                            {(formData as any).certificateSubtitle || "Awarded for Excellence"}
-                          </p>
+                      {planFormError && (
+                        <div className="text-xs text-red-600 mt-1">{planFormError}</div>
+                      )}
+                      {plans.length > 0 && (
+                        <div className="mt-4">
+                          <table className="w-full text-sm border">
+                            <thead>
+                              <tr className="bg-gray-100 dark:bg-gray-700">
+                                <th className="p-2">Name</th>
+                                <th className="p-2">Price</th>
+                                <th className="p-2">Description</th>
+                                <th className="p-2">Duration Type</th>
+                                <th className="p-2">Duration</th>
+                                <th className="p-2">Sale Price</th>
+                                <th className="p-2">Status</th>
+                                <th className="p-2"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {plans.map((plan, idx) => (
+                                <tr key={idx}>
+                                  <td className="p-2">{plan.name}</td>
+                                  <td className="p-2">{plan.price}</td>
+                                  <td className="p-2">{plan.description}</td>
+                                  <td className="p-2">{plan.durationType}</td>
+                                  <td className="p-2">{plan.duration}</td>
+                                  <td className="p-2">{plan.salePrice}</td>
+                                  <td className="p-2">{plan.status}</td>
+                                  <td className="p-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditPlan(idx)}
+                                      className="text-blue-500 hover:underline mr-2"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemovePlan(idx)}
+                                      className="text-red-500 hover:underline"
+                                    >
+                                      Remove
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
+                      )}
+                    </div>
+                    {/* --- End Plans Section --- */}
+                  </div>
+                )}
 
-                        {/* Certificate Body */}
-                        <div className="py-8 px-6">
-                          <p className="text-gray-800 text-lg leading-relaxed mb-8">
-                            {(() => {
-                              const recipientName = (formData as any).certificateRecipientName || "Student Name";
-                              let description = (formData as any).certificateDescription ||
-                                `This certificate is awarded to **${recipientName}** for successfully completing the course.`;
+                {activeTab === "features" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Features</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="certificateTemplate"
+                          checked={formData.certificateTemplate}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <Award className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Certificate Available
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="isDownloadable"
+                          checked={formData.isDownloadable}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <Download className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Downloadable Content
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="courseForum"
+                          checked={formData.courseForum}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <MessageCircle className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Course Forum
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="isPrivate"
+                          checked={formData.isPrivate}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <Lock className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Private Course
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="enableWaitlist"
+                          checked={formData.enableWaitlist}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <Users className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Enable Waitlist
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
 
-                              // Replace any instance of "Student Name" (with or without **) with the actual recipient name
-                              description = description.replace(/Student Name/g, recipientName);
+                {activeTab === "tags" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Tags</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
+                        <Tag className="w-4 h-4" />
+                        Course Tags *
+                      </label>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {predefinedTags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => addTag(tag)}
+                            className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag)
+                              ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                              }`}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customTag}
+                          onChange={(e) => setCustomTag(e.target.value)}
+                          className="flex-1 border dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Add custom tag"
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addCustomTag();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={addCustomTag}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {formErrors.tags && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.tags}
+                        </p>
+                      )}
+                    </div>
+                    {selectedTags.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Selected Tags:
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full text-sm"
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTag(tag)}
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                              return description.split('**').map((part: string, index: number) =>
-                                index % 2 === 1 ? (
-                                  <strong key={index} className="text-amber-700 font-bold">
-                                    {part || recipientName}
-                                  </strong>
-                                ) : (
-                                  <span key={index}>{part}</span>
-                                )
-                              );
-                            })()}
-                          </p>
+                {activeTab === "seo" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">SEO Content</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        SEO Meta Description
+                      </label>
+                      <textarea
+                        name="seoMetaDescription"
+                        value={formData.seoMetaDescription}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className={`w-full border dark:text-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${formErrors.seoMetaDescription
+                          ? "border-red-400"
+                          : "border-gray-300 dark:border-gray-600"
+                          }`}
+                        placeholder="Enter meta description for search engines (max 160 characters)"
+                        maxLength={160}
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {formData.seoMetaDescription.length}/160 characters
+                      </p>
+                      {formErrors.seoMetaDescription && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.seoMetaDescription}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        SEO Content
+                      </label>
+                      <QuillEditor
+                        value={seoContent}
+                        onChange={setSeoContent}
+                        placeholder="Add SEO-friendly content for better search rankings..."
+                      />
+                      {formErrors.seoContent && (
+                        <p className="mt-2 text-xs text-red-600">
+                          {formErrors.seoContent}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                          {/* Certificate Footer */}
-                          <div className="mt-12 flex justify-between items-end border-t-2 border-amber-300 pt-6">
-                            <div className="text-left">
-                              <p className="font-bold text-gray-800">
-                                {(formData as any).certificateIssuerName || (formData as any).mentorName || "Instructor"}
-                              </p>
-                              {((formData as any).certificateIssuerTitle || (formData as any).mentorTitle) && (
-                                <p className="text-sm text-gray-600">
-                                  {(formData as any).certificateIssuerTitle || (formData as any).mentorTitle}
+                {activeTab === "modules" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Course Modules</h3>
+                    {console?.log("modules 0987", modules)}
+                    <ModuleSection
+                      modules={modules}
+                      onModulesChange={handleModulesChange}
+                      courseId={courseId}
+                    />
+                  </div>
+                )}
+
+                {activeTab === "faqs" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">FAQs</h3>
+                    <Faqs courseId={courseId} />
+                  </div>
+                )}
+
+                {activeTab === "mentor" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mentor Information</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Mentor Name
+                        </label>
+                        <input
+                          type="text"
+                          name="mentorName"
+                          value={formData.mentorName || ""}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter mentor name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Mentor Title
+                        </label>
+                        <input
+                          type="text"
+                          name="mentorTitle"
+                          value={formData.mentorTitle || ""}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="e.g., Digital Marketing Expert"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Mentor Description
+                      </label>
+                      <QuillEditor
+                        value={formData.mentorDescription || ""}
+                        onChange={(value) => setFormData({ ...formData, mentorDescription: value })}
+                        placeholder="Enter mentor description"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Mentor Image
+                      </label>
+                      <FileUpload
+                        label="Upload Mentor Image"
+                        accept="image/*"
+                        onFileChange={(file) => {
+                          // Handle file upload - you may need to upload it first
+                          setFormData({ ...formData, mentorImageFile: file });
+                        }}
+                        currentFile={formData.mentorImageFile || null}
+                        icon={Image}
+                      />
+                      {formData.mentorImage && (
+                        <div className="mt-4">
+                          <img
+                            src={`${baseUrl}/${formData.mentorImage}`}
+                            alt="Current mentor image"
+                            className="w-32 h-32 object-cover rounded-lg border dark:border-gray-600"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Mentor Achievements
+                      </label>
+                      <div className="space-y-2">
+                        {(formData.mentorAchievements || []).map((achievement, index) => (
+                          <div key={index} className="flex gap-2">
+                            <input
+                              type="text"
+                              value={achievement}
+                              onChange={(e) => {
+                                const updated = [...(formData.mentorAchievements || [])];
+                                updated[index] = e.target.value;
+                                setFormData({ ...formData, mentorAchievements: updated });
+                              }}
+                              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Enter achievement"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (formData.mentorAchievements || []).filter((_, i) => i !== index);
+                                setFormData({ ...formData, mentorAchievements: updated });
+                              }}
+                              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              mentorAchievements: [...(formData.mentorAchievements || []), ""]
+                            });
+                          }}
+                          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Achievement
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Social Links
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">LinkedIn</label>
+                          <input
+                            type="url"
+                            value={formData.mentorSocialLinks?.linkedin || ""}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              mentorSocialLinks: {
+                                ...(formData.mentorSocialLinks || {}),
+                                linkedin: e.target.value
+                              }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://linkedin.com/in/..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">YouTube</label>
+                          <input
+                            type="url"
+                            value={formData.mentorSocialLinks?.youtube || ""}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              mentorSocialLinks: {
+                                ...(formData.mentorSocialLinks || {}),
+                                youtube: e.target.value
+                              }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://youtube.com/..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Twitter</label>
+                          <input
+                            type="url"
+                            value={formData.mentorSocialLinks?.twitter || ""}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              mentorSocialLinks: {
+                                ...(formData.mentorSocialLinks || {}),
+                                twitter: e.target.value
+                              }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://twitter.com/..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Website</label>
+                          <input
+                            type="url"
+                            value={formData.mentorSocialLinks?.website || ""}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              mentorSocialLinks: {
+                                ...(formData.mentorSocialLinks || {}),
+                                website: e.target.value
+                              }
+                            })}
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "landingPage" && (
+                  <LandingPageSections formData={formData} setFormData={setFormData} />
+                )}
+
+                {activeTab === "certificate" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Certificate Settings</h3>
+
+                    {/* Certificate Preview */}
+                    {!formData.certificateImage && (
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Certificate Preview
+                        </label>
+                        <div className="w-full max-w-4xl mx-auto bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg shadow-2xl p-8 border-4 border-amber-300">
+                          {/* Certificate Header */}
+                          <div className="bg-red-600 text-white py-4 px-6 rounded-t-lg mb-6">
+                            <h3 className="text-2xl font-bold">
+                              {(formData as any).certificateTitle || "Certificate of Completion"}
+                            </h3>
+                            <p className="text-red-200 text-sm mt-1">
+                              {(formData as any).certificateSubtitle || "Awarded for Excellence"}
+                            </p>
+                          </div>
+
+                          {/* Certificate Body */}
+                          <div className="py-8 px-6">
+                            <p className="text-gray-800 text-lg leading-relaxed mb-8">
+                              {(() => {
+                                const recipientName = (formData as any).certificateRecipientName || "Student Name";
+                                let description = (formData as any).certificateDescription ||
+                                  `This certificate is awarded to **${recipientName}** for successfully completing the course.`;
+
+                                // Replace any instance of "Student Name" (with or without **) with the actual recipient name
+                                description = description.replace(/Student Name/g, recipientName);
+
+                                return description.split('**').map((part: string, index: number) =>
+                                  index % 2 === 1 ? (
+                                    <strong key={index} className="text-amber-700 font-bold">
+                                      {part || recipientName}
+                                    </strong>
+                                  ) : (
+                                    <span key={index}>{part}</span>
+                                  )
+                                );
+                              })()}
+                            </p>
+
+                            {/* Certificate Footer */}
+                            <div className="mt-12 flex justify-between items-end border-t-2 border-amber-300 pt-6">
+                              <div className="text-left">
+                                <p className="font-bold text-gray-800">
+                                  {(formData as any).certificateIssuerName || (formData as any).mentorName || "Instructor"}
                                 </p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-gray-800">
-                                {(formData as any).certificateOrganization || "Lapaas LMS"}
-                              </p>
+                                {((formData as any).certificateIssuerTitle || (formData as any).mentorTitle) && (
+                                  <p className="text-sm text-gray-600">
+                                    {(formData as any).certificateIssuerTitle || (formData as any).mentorTitle}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-gray-800">
+                                  {(formData as any).certificateOrganization || "Lapaas LMS"}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        This preview shows how the certificate will look with your current settings. The recipient name shown is the placeholder value.
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Certificate Image (Optional - Upload custom certificate design)
-                    </label>
-                    <FileUpload
-                      label="Upload Certificate Image"
-                      accept="image/*"
-                      onFileChange={(file) => {
-                        setFormData({ ...formData, certificateImageFile: file });
-                      }}
-                      currentFile={formData.certificateImageFile || null}
-                      icon={Image}
-                    />
-                    {formData.certificateImage && (
-                      <div className="mt-4">
-                        <img
-                          src={`${baseUrl}/${formData.certificateImage}`}
-                          alt="Current certificate image"
-                          className="w-full max-w-md h-auto object-cover rounded-lg border dark:border-gray-600"
-                        />
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          This preview shows how the certificate will look with your current settings. The recipient name shown is the placeholder value.
+                        </p>
                       </div>
                     )}
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      If you upload a custom certificate image, it will be used instead of the default template.
-                    </p>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Certificate Title
+                        Certificate Image (Optional - Upload custom certificate design)
                       </label>
-                      <input
-                        type="text"
-                        name="certificateTitle"
-                        value={formData.certificateTitle || "Certificate of Completion"}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Certificate of Completion"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Certificate Subtitle
-                      </label>
-                      <input
-                        type="text"
-                        name="certificateSubtitle"
-                        value={formData.certificateSubtitle || "Awarded for Excellence"}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Awarded for Excellence"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Certificate Description
-                    </label>
-                    <textarea
-                      name="certificateDescription"
-                      value={formData.certificateDescription || ""}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                      placeholder="This certificate is awarded to **Student Name** for successfully completing the course."
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Use **text** for bold text (e.g., **Student Name** will be bold)
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Default Recipient Name (Placeholder)
-                      </label>
-                      <input
-                        type="text"
-                        name="certificateRecipientName"
-                        value={formData.certificateRecipientName || "Student Name"}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Student Name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Certificate Organization
-                      </label>
-                      <input
-                        type="text"
-                        name="certificateOrganization"
-                        value={formData.certificateOrganization || "Lapaas LMS"}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Lapaas LMS"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Issuer Name
-                      </label>
-                      <input
-                        type="text"
-                        name="certificateIssuerName"
-                        value={formData.certificateIssuerName || formData.mentorName || ""}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Instructor Name"
-                      />
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Leave empty to use mentor name
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                        Issuer Title
-                      </label>
-                      <input
-                        type="text"
-                        name="certificateIssuerTitle"
-                        value={formData.certificateIssuerTitle || formData.mentorTitle || ""}
-                        onChange={handleInputChange}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
-                        placeholder="Instructor Title"
-                      />
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Leave empty to use mentor title
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "publication" && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Publication Status</h3>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                    <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
-                      Publication Status
-                    </h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
-                      Choose whether to publish your course immediately or save as draft.
-                    </p>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        name="isPublished"
-                        checked={formData.isPublished}
-                        // Only update local state, do NOT call handleSubmit here
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setFormData((prev) => ({
-                            ...prev,
-                            isPublished: checked,
-                          }));
-                          setFormErrors((prev) => ({ ...prev, isPublished: "" }));
+                      <FileUpload
+                        label="Upload Certificate Image"
+                        accept="image/*"
+                        onFileChange={(file) => {
+                          setFormData({ ...formData, certificateImageFile: file });
                         }}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        currentFile={formData.certificateImageFile || null}
+                        icon={Image}
                       />
-                      <Eye className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-gray-700 dark:text-gray-200">
-                        Publish Course
-                      </span>
-                    </label>
-                  </div>
-                  {formData.isPublished && (
-                    <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-green-900 dark:text-green-300">
-                          Ready to Publish
-                        </span>
-                      </div>
-                      <p className="text-sm text-green-700 dark:text-green-400">
-                        Your course will be visible to students once published.
+                      {formData.certificateImage && (
+                        <div className="mt-4">
+                          <img
+                            src={`${baseUrl}/${formData.certificateImage}`}
+                            alt="Current certificate image"
+                            className="w-full max-w-md h-auto object-cover rounded-lg border dark:border-gray-600"
+                          />
+                        </div>
+                      )}
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        If you upload a custom certificate image, it will be used instead of the default template.
                       </p>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="mt-8 flex justify-end bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Update Course
-                  </>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Certificate Title
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateTitle"
+                          value={formData.certificateTitle || "Certificate of Completion"}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Certificate of Completion"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Certificate Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateSubtitle"
+                          value={formData.certificateSubtitle || "Awarded for Excellence"}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Awarded for Excellence"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Certificate Description
+                      </label>
+                      <textarea
+                        name="certificateDescription"
+                        value={formData.certificateDescription || ""}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                        placeholder="This certificate is awarded to **Student Name** for successfully completing the course."
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Use **text** for bold text (e.g., **Student Name** will be bold)
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Default Recipient Name (Placeholder)
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateRecipientName"
+                          value={formData.certificateRecipientName || "Student Name"}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Student Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Certificate Organization
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateOrganization"
+                          value={formData.certificateOrganization || "Lapaas LMS"}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Lapaas LMS"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Issuer Name
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateIssuerName"
+                          value={formData.certificateIssuerName || formData.mentorName || ""}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Instructor Name"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Leave empty to use mentor name
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Issuer Title
+                        </label>
+                        <input
+                          type="text"
+                          name="certificateIssuerTitle"
+                          value={formData.certificateIssuerTitle || formData.mentorTitle || ""}
+                          onChange={handleInputChange}
+                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 dark:text-gray-200 focus:ring-2 focus:ring-blue-500"
+                          placeholder="Instructor Title"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Leave empty to use mentor title
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
-          </form>
+
+                {activeTab === "publication" && (
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Publication Status</h3>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                      <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">
+                        Publication Status
+                      </h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                        Choose whether to publish your course immediately or save as draft.
+                      </p>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name="isPublished"
+                          checked={formData.isPublished}
+                          // Only update local state, do NOT call handleSubmit here
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setFormData((prev) => ({
+                              ...prev,
+                              isPublished: checked,
+                            }));
+                            setFormErrors((prev) => ({ ...prev, isPublished: "" }));
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                        />
+                        <Eye className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                          Publish Course
+                        </span>
+                      </label>
+                    </div>
+                    {formData.isPublished && (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-green-900 dark:text-green-300">
+                            Ready to Publish
+                          </span>
+                        </div>
+                        <p className="text-sm text-green-700 dark:text-green-400">
+                          Your course will be visible to students once published.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-8 flex justify-end bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Update Course
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
         </div >
       </div >
     </>
