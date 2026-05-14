@@ -1278,7 +1278,7 @@ const EditCourse = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FileUpload
-                        label="Vertical Carousel Image"
+                        label="Horizontal Carousel Image"
                         accept="image/*"
                         onFileChange={setVerticalCarouselImageFile}
                         currentFile={verticalCarouselImageFile}

@@ -222,48 +222,6 @@ const EditModulePopup = ({ module, courseId, onClose, onModuleUpdated }) => {
                             />
                         </div>
 
-                        {/* Module Thumbnail */}
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Module Thumbnail</label>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center gap-3 hover:border-blue-400 transition-colors">
-                                {displayImage ? (
-                                    <div className="relative">
-                                        <img
-                                            src={displayImage}
-                                            alt="Module thumbnail"
-                                            className="h-32 w-auto rounded-lg object-cover"
-                                            onError={e => { e.target.style.display = "none"; }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => { setNewImage(null); setImagePreview(null); setExistingImage(null); }}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-gray-400">No thumbnail yet</p>
-                                )}
-
-                                <label
-                                    htmlFor="edit-module-image"
-                                    className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors"
-                                >
-                                    {displayImage ? "Change Image" : "Upload Image"}
-                                    <input
-                                        id="edit-module-image"
-                                        type="file"
-                                        accept="image/*"
-                                        className="sr-only"
-                                        onChange={handleImageChange}
-                                        disabled={saving}
-                                    />
-                                </label>
-                                <p className="text-xs text-gray-400">PNG, JPG, GIF up to 10MB</p>
-                            </div>
-                        </div>
-
                         {/* Duration */}
                         <div>
                             <label className="block text-sm font-medium mb-1">Estimated Duration (minutes)</label>

@@ -32,7 +32,9 @@ export const createLesson = createAsyncThunk(
     try {
       const formData = new FormData();
       Object.entries(lessonData).forEach(([key, value]) => {
-        formData.append(key, value as string);
+        if (value !== undefined && value !== null) {
+          formData.append(key, value as any);
+        }
       });
 
       const response = await axiosInstance.post("/lesson", formData, {

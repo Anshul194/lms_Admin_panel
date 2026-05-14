@@ -121,11 +121,9 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
     order: 1,
     estimatedDuration: 60,
     isPublished: true,
-    image: null, // New image field
   });
 
   const [isSaving, setIsSaving] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
   const [popup, setPopup] = useState<{
     message: string;
     type: "success" | "error";
@@ -136,17 +134,7 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
     isVisible: false,
   });
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setModuleData({ ...moduleData, image: file });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+
 
   const handleCreateModule = async () => {
     if (!moduleData.title.trim()) {
@@ -168,7 +156,6 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
         order: moduleData.order,
         estimatedDuration: moduleData.estimatedDuration,
         isPublished: moduleData.isPublished,
-        image: moduleData.image, // Include image in payload
         token,
       };
 
@@ -193,7 +180,6 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
         isPublished: true,
         image: null,
       });
-      setImagePreview(null);
     } catch (error) {
       setPopup({
         message: "Failed to create module. Please try again.",
@@ -257,56 +243,7 @@ const ModuleCreationForm = ({ onModuleCreated, courseId }) => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-white/90 mb-2">
-              Module Thumbnail Image
-            </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-blue-400 transition-colors duration-200">
-              <div className="space-y-1 text-center">
-                {imagePreview ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="mx-auto h-32 w-auto rounded-lg object-cover mb-4"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setModuleData({ ...moduleData, image: null });
-                        setImagePreview(null);
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <Image className="mx-auto h-12 w-12 text-gray-400" />
-                )}
-                <div className="flex text-sm text-gray-600 justify-center">
-                  <label
-                    htmlFor="module-image-upload"
-                    className="relative cursor-pointer bg-white dark:bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                  >
-                    <span>Upload a file</span>
-                    <input
-                      id="module-image-upload"
-                      name="module-image-upload"
-                      type="file"
-                      className="sr-only"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                  <p className="pl-1 dark:text-white/70">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-white/50">
-                  PNG, JPG, GIF up to 10MB
-                </p>
-              </div>
-            </div>
-          </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -420,9 +357,46 @@ const LessonEditor = ({
   });
   const [showContentModal, setShowContentModal] = useState(false);
   const [OpenLessonData, setOpenLessonData] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [lessonImage, setLessonImage] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const params = useParams();
   const courseIdFromParams = params.courseId;
+
+  const handleLessonImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLessonImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      onChange({ ...lesson, image: file });
+    }
+  };
+
+  const getDisplayImage = () => {
+    if (imagePreview) return imagePreview;
+    if (lesson.image && typeof lesson.image === "string") {
+        if (lesson.image.startsWith("http")) return lesson.image;
+        let cleanPath = lesson.image.replace(/\\/g, "/");
+        if (cleanPath.includes("/uploads/")) {
+            cleanPath = cleanPath.substring(cleanPath.indexOf("/uploads/"));
+        } else if (cleanPath.includes("uploads/")) {
+            cleanPath = "/" + cleanPath.substring(cleanPath.indexOf("uploads/"));
+        }
+        let base = "";
+        try {
+            const url = new URL(import.meta.env.VITE_BASE_URL);
+            base = url.origin;
+        } catch (e) {
+            base = (import.meta.env.VITE_BASE_URL || "").replace(/\/api\/v1\/?$/, "");
+        }
+        return `${base}${cleanPath.startsWith("/") ? cleanPath : "/" + cleanPath}`;
+    }
+    return null;
+  };
 
   const getData = async (id) => {
     setShowContentModal(true);
@@ -608,6 +582,7 @@ const LessonEditor = ({
         order: lesson.order || 1,
         isRequired: lesson.isRequired || true,
         language: "en",
+        image: lesson.image || lessonImage,
       };
 
       console.log("Saving lesson data:", lessonData);
@@ -1104,6 +1079,59 @@ const LessonEditor = ({
               </div>
             </div>
 
+            {/* Lesson Image Upload */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lesson Image
+              </label>
+              <div className="flex flex-col sm:flex-row items-start gap-4 p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 transition-colors">
+                <div className="w-full sm:w-48 h-32 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center shrink-0">
+                  {getDisplayImage() ? (
+                    <img
+                      src={getDisplayImage()}
+                      alt="Lesson Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image className="w-10 h-10 text-gray-300" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <label
+                      htmlFor={`lesson-image-${moduleId}-${lesson.order}`}
+                      className="cursor-pointer px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                    >
+                      {getDisplayImage() ? "Change Image" : "Upload Image"}
+                      <input
+                        id={`lesson-image-${moduleId}-${lesson.order}`}
+                        type="file"
+                        className="sr-only"
+                        accept="image/*"
+                        onChange={handleLessonImageChange}
+                      />
+                    </label>
+                    {getDisplayImage() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setLessonImage(null);
+                          onChange({ ...lesson, image: null });
+                        }}
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG or GIF. Max 10MB. This image will be displayed on the course landing page lessons.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Action Buttons Section */}
             {getActionButtons()}
 
@@ -1411,6 +1439,7 @@ const SavedModuleDisplay = ({
                       title: lessonData.title || lesson.title,
                       type: lessonData.type || lesson.type,
                       order: lessonData.order || lesson.order,
+                      image: lessonData.image || lesson.image,
                       isRequired:
                         lessonData.isRequired !== undefined
                           ? lessonData.isRequired

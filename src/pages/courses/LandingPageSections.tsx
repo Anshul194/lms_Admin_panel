@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, X, Layout, Layers, CheckCircle, Sparkles, Target, GripVertical, Copy, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, X, Layout, Layers, CheckCircle, Sparkles, Target, GripVertical, Copy, Trash2, ArrowUp, ArrowDown, Shield } from "lucide-react";
 import Editor from "../../components/Editor";
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -15,7 +15,7 @@ const sectionTemplates = {
         type: "comparison",
         title: "Comparison Section",
         icon: Layers,
-        defaultData: { show: true, title: "", leftTitle: "Traditional Program", rightTitle: "Our Program", content: null, leftPoints: [""], rightPoints: [""] }
+        defaultData: { show: true, title: "", leftTitle: "Traditional Program", rightTitle: "Our Program", description: null, content: null, leftPoints: [""], rightPoints: [""] }
     },
     benefits: {
         type: "benefits",
@@ -33,7 +33,13 @@ const sectionTemplates = {
         type: "solution",
         title: "Solution Section",
         icon: Target,
-        defaultData: { show: true, title: "", content: null, points: [""] }
+        defaultData: { show: true, title: "", content: null, points: [""], outcomeTitle: "", outcomeDescription: null, outcomePoints: [""], solutionTitle: "", solutionDescription: null }
+    },
+    guarantee: {
+        type: "guarantee",
+        title: "Guarantee Section",
+        icon: Shield,
+        defaultData: { show: true }
     }
 };
 
@@ -188,7 +194,15 @@ export default function LandingPageSections({ formData, setFormData }: any) {
                                     {/* COMPARISON SECTION CONTENT */}
                                     {section.type === "comparison" && (
                                         <div className="space-y-6">
-                                            <input type="text" placeholder="Section Title" value={sData.title} onChange={(e) => updateSectionData(index, { ...sData, title: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200" />
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Section Title & Description</label>
+                                                    <input type="text" placeholder="Section Title" value={sData.title} onChange={(e) => updateSectionData(index, { ...sData, title: e.target.value })} className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200" />
+                                                    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                                                        <Editor key={`comparison-desc-${section.id}`} holder={`comparison-desc-${section.id}`} data={sData.description} onChange={(data: any) => updateSectionData(index, { ...sData, description: data })} uploadEndpoint="/courses/images" />
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {/* LEFT COLUMN */}
                                                 <div className="space-y-4">
@@ -220,10 +234,6 @@ export default function LandingPageSections({ formData, setFormData }: any) {
                                                         <button type="button" onClick={() => updateSectionData(index, { ...sData, rightPoints: [...(sData.rightPoints || []), ""] })} className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 hover:text-black flex items-center justify-center gap-2"><Plus className="w-4 h-4" /> Add Right Point</button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 px-4 pt-4">Additional Content (Optional)</label>
-                                                <Editor key={`comp-editor-${section.id}`} holder={`comp-editor-${section.id}`} data={sData.content} onChange={(data: any) => updateSectionData(index, { ...sData, content: data })} uploadEndpoint="/courses/images" />
                                             </div>
                                         </div>
                                     )}
@@ -270,8 +280,65 @@ export default function LandingPageSections({ formData, setFormData }: any) {
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 px-4 pt-4">Main Content</label>
                                                 <Editor key={`solution-editor-${section.id}`} holder={`solution-editor-${section.id}`} data={sData.content} onChange={(data: any) => updateSectionData(index, { ...sData, content: data })} uploadEndpoint="/courses/images" />
                                             </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Solution Points</label>
+                                            <div className="mb-8 p-4 border border-gray-200 dark:border-gray-800 rounded-xl bg-white/30 dark:bg-gray-800/30">
+                                                <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Phase 1: What we Solve (Challenges)</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Enter heading for challenges (e.g. Problems we solve)" 
+                                                    value={sData.outcomeTitle || ""} 
+                                                    onChange={(e) => updateSectionData(index, { ...sData, outcomeTitle: e.target.value })} 
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 mb-4 dark:bg-gray-800 dark:text-gray-200" 
+                                                />
+                                                <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 mb-4">
+                                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 px-3 pt-2 text-transform: uppercase">Challenge Description</label>
+                                                    <Editor key={`outcome-desc-editor-${section.id}`} holder={`outcome-desc-editor-${section.id}`} data={sData.outcomeDescription} onChange={(data: any) => updateSectionData(index, { ...sData, outcomeDescription: data })} uploadEndpoint="/courses/images" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {(sData.outcomePoints || [""]).map((point: any, pIndex: number) => (
+                                                        <div key={pIndex} className="flex gap-2">
+                                                            <input 
+                                                                type="text" 
+                                                                value={point} 
+                                                                onChange={(e) => { 
+                                                                    const updated = [...(sData.outcomePoints || [""])]; 
+                                                                    updated[pIndex] = e.target.value; 
+                                                                    updateSectionData(index, { ...sData, outcomePoints: updated }); 
+                                                                }} 
+                                                                className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800 dark:text-gray-200" 
+                                                                placeholder="Enter challenge point" 
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => updateSectionData(index, { ...sData, outcomePoints: (sData.outcomePoints || [""]).filter((_: any, i: number) => i !== pIndex) })} 
+                                                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => updateSectionData(index, { ...sData, outcomePoints: [...(sData.outcomePoints || [""]), ""] })} 
+                                                        className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 hover:text-black flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus className="w-4 h-4" /> Add Challenge Point
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-8 p-4 border border-gray-200 dark:border-gray-800 rounded-xl bg-white/30 dark:bg-gray-800/30">
+                                                <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Phase 2: Solutions (Program Outcomes)</label>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="By Program's End, You'll Have" 
+                                                    value={sData.solutionTitle || ""} 
+                                                    onChange={(e) => updateSectionData(index, { ...sData, solutionTitle: e.target.value })} 
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 mb-4 dark:bg-gray-800 dark:text-gray-200" 
+                                                />
+                                                <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 mb-4">
+                                                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 px-3 pt-2 text-transform: uppercase">Solution Description</label>
+                                                    <Editor key={`solution-desc-editor-${section.id}`} holder={`solution-desc-editor-${section.id}`} data={sData.solutionDescription} onChange={(data: any) => updateSectionData(index, { ...sData, solutionDescription: data })} uploadEndpoint="/courses/images" />
+                                                </div>
                                                 <div className="space-y-2">
                                                     {(sData.points || [""]).map((point: any, pIndex: number) => (
                                                         <div key={pIndex} className="flex gap-2">
@@ -300,6 +367,7 @@ export default function LandingPageSections({ formData, setFormData }: any) {
                     <button type="button" onClick={() => addSection('benefits')} className="px-4 py-2 bg-green-50 text-green-600 border border-green-200 rounded-lg hover:bg-green-100 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Benefits</button>
                     <button type="button" onClick={() => addSection('framework')} className="px-4 py-2 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-lg hover:bg-yellow-100 flex items-center gap-2"><Sparkles className="w-4 h-4" /> Framework</button>
                     <button type="button" onClick={() => addSection('solution')} className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 flex items-center gap-2"><Target className="w-4 h-4" /> Solution</button>
+                    <button type="button" onClick={() => addSection('guarantee')} className="px-4 py-2 bg-orange-50 text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-100 flex items-center gap-2"><Shield className="w-4 h-4" /> Guarantee</button>
                 </div>
             </div>
         </div>
