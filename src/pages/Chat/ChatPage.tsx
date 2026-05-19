@@ -20,7 +20,9 @@ import {
   Info,
   MessageCircle,
   Bot,
-  CheckCheck
+  CheckCheck,
+  Reply,
+  Copy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axiosInstance from "../../services/axiosConfig";
@@ -40,6 +42,7 @@ interface Message {
     fullName: string;
     profilePicture?: string;
   };
+  replyTo?: any;
 }
 
 interface Chat {
@@ -49,7 +52,20 @@ interface Chat {
   image?: string;
   lastMessage?: string;
   unreadCount: number;
+  participantId?: string;
+  updatedAt?: string;
 }
+
+const formatMessageTime = (dateString?: string) => {
+  if (!dateString || dateString === new Date(0).toISOString()) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  if (isToday) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + (date.getFullYear() !== now.getFullYear() ? `, ${date.getFullYear()}` : '');
+};
 
 const ChatPage: React.FC = () => {
   console.log("ChatPage rendering...");
@@ -91,6 +107,8 @@ const ChatPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [subFilter, setSubFilter] = useState<'all' | 'unread'>('unread');
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +145,8 @@ const ChatPage: React.FC = () => {
           unreadCount: r.unreadCount || 0,
           lastMessage: r.lastMessage?.message || (r.lastMessage?.fileUrl ? "Sent a file" : ""),
           participantId: otherParticipant?._id,
-          image: otherParticipant?.profilePicture ? `${import.meta.env.VITE_IMAGE_URL}/${otherParticipant.profilePicture}` : undefined
+          image: otherParticipant?.profilePicture ? `${import.meta.env.VITE_IMAGE_URL}/${otherParticipant.profilePicture}` : undefined,
+          updatedAt: r.lastMessage?.createdAt || r.updatedAt || new Date(0).toISOString()
         };
       });
 
@@ -137,7 +156,8 @@ const ChatPage: React.FC = () => {
         name: r.courseId?.title || "Course Chat",
         unreadCount: r.unreadCount || 0,
         lastMessage: r.lastMessage?.message || "Course Chat",
-        image: r.courseId?.thumbnail ? `${import.meta.env.VITE_IMAGE_URL}/${r.courseId.thumbnail}` : undefined
+        image: r.courseId?.thumbnail ? `${import.meta.env.VITE_IMAGE_URL}/${r.courseId.thumbnail}` : undefined,
+        updatedAt: r.lastMessage?.createdAt || r.updatedAt || new Date(0).toISOString()
       }));
 
       const allRooms = [...directRooms, ...courseRooms];
@@ -167,7 +187,8 @@ const ChatPage: React.FC = () => {
         file: m.fileUrl,
         fileType: m.fileType || 'text',
         createdAt: m.createdAt,
-        senderInfo: m.sender
+        senderInfo: m.sender,
+        replyTo: m.replyTo
       })).reverse(); // Backend returns latest first
       setMessages(formattedMessages);
       
@@ -186,6 +207,10 @@ const ChatPage: React.FC = () => {
       }
 
       axiosInstance.patch(readEndpoint, payload);
+      
+      setChats(prev => prev.map(chat => 
+        chat.id === roomId ? { ...chat, unreadCount: 0 } : chat
+      ));
     } catch (err) {
       console.error("Failed to fetch messages", err);
     }
@@ -199,7 +224,8 @@ const ChatPage: React.FC = () => {
         name: s.fullName || s.name,
         image: s.profilePicture ? `${import.meta.env.VITE_IMAGE_URL}/${s.profilePicture}` : undefined,
         unreadCount: 0,
-        participantId: s._id
+        participantId: s._id,
+        updatedAt: new Date(0).toISOString()
       }));
       
       setChats(prev => {
@@ -276,21 +302,25 @@ const ChatPage: React.FC = () => {
       const handleIncomingMessage = (msg: any) => {
         const roomId = msg.chatRoomId || msg.groupChatRoomId || msg.courseChatRoomId;
         const isCurrentChat = (roomId === selectedChat?.id);
+        const currentUserId = currentUser?.id || (currentUser as any)?._id;
+        const senderId = msg.sender?._id || msg.sender;
+        const isMe = senderId === currentUserId;
 
         if (isCurrentChat) {
           setMessages(prev => [...prev, {
             _id: msg._id,
-            sender: msg.sender._id || msg.sender,
+            sender: senderId,
             content: msg.message,
             file: msg.fileUrl,
             fileType: msg.fileType || 'text',
             createdAt: msg.createdAt,
-            senderInfo: msg.sender // Store sender info for multi-user chats (courses)
+            senderInfo: msg.sender, // Store sender info for multi-user chats (courses)
+            replyTo: msg.replyTo
           }]);
           
           // Mark as read immediately if it's the current chat
           let readEndpoint = "/chat/message/read";
-          let payload: any = { roomId: msg.chatRoomId, senderId: msg.sender._id || msg.sender };
+          let payload: any = { roomId: msg.chatRoomId, senderId: senderId };
           
           if (msg.courseChatRoomId) {
             readEndpoint = "/chat/course/message/read";
@@ -299,7 +329,7 @@ const ChatPage: React.FC = () => {
 
           axiosInstance.patch(readEndpoint, payload);
         }
-        updateLastMessage(msg);
+        updateLastMessage(msg, isCurrentChat, isMe);
       };
 
       chatService.onNewMessage(handleIncomingMessage);
@@ -314,11 +344,16 @@ const ChatPage: React.FC = () => {
     }
   }, [token, currentUser, selectedChat?.id]);
 
-  const updateLastMessage = (msg: any) => {
+  const updateLastMessage = (msg: any, isCurrentChat: boolean, isMe: boolean) => {
     const roomId = msg.chatRoomId || msg.groupChatRoomId || msg.courseChatRoomId;
     setChats(prev => prev.map(chat => {
       if (chat.id === roomId) {
-        return { ...chat, lastMessage: msg.message || "File" };
+        return { 
+          ...chat, 
+          lastMessage: msg.message || "File",
+          updatedAt: msg.createdAt || new Date().toISOString(),
+          unreadCount: isCurrentChat ? 0 : (isMe ? chat.unreadCount : chat.unreadCount + 1)
+        };
       }
       return chat;
     }));
@@ -384,16 +419,26 @@ const ChatPage: React.FC = () => {
       chatService.sendMessage({
         roomId: selectedChat.id,
         receiverId: selectedChat.participantId,
-        message: inputValue
+        message: inputValue,
+        replyTo: replyingTo?._id
       });
     } else if (selectedChat.type === 'course') {
       chatService.sendCourseChatMessage({
         courseChatRoomId: selectedChat.id,
-        message: inputValue
+        message: inputValue,
+        replyTo: replyingTo?._id
       });
     }
 
     setInputValue("");
+    setReplyingTo(null);
+  };
+
+  const handleCopyMessage = (msg: Message) => {
+    const textToCopy = msg.content || msg.file || "";
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -461,6 +506,21 @@ const ChatPage: React.FC = () => {
               Courses
             </button>
           </div>
+
+          <div className="flex gap-2 mt-3 border-b border-gray-100 dark:border-gray-800 pb-2">
+            <button 
+              onClick={() => setSubFilter('all')}
+              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${subFilter === 'all' ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-800/40'}`}
+            >
+              All
+            </button>
+            <button 
+              onClick={() => setSubFilter('unread')}
+              className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${subFilter === 'unread' ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-800/40'}`}
+            >
+              Unread
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -474,7 +534,18 @@ const ChatPage: React.FC = () => {
               const filtered = chats.filter(c => c.type === activeTab && (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
               console.log(`Filtered count for ${activeTab}: ${filtered.length}`);
               
-              return filtered.map(chat => (
+              const sorted = [...filtered].sort((a, b) => {
+                if (subFilter === 'unread') {
+                  if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+                  if (b.unreadCount > 0 && a.unreadCount === 0) return 1;
+                }
+                
+                const dateA = new Date(a.updatedAt || 0).getTime();
+                const dateB = new Date(b.updatedAt || 0).getTime();
+                return dateB - dateA;
+              });
+              
+              return sorted.map(chat => (
                 <div
                   key={chat.id}
                   onClick={() => setSelectedChat(chat)}
@@ -494,7 +565,7 @@ const ChatPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-0.5">
                       <h3 className="font-bold text-sm truncate dark:text-white">{chat.name}</h3>
-                      <span className="text-[10px] text-gray-400">12:45 PM</span>
+                      <span className="text-[10px] text-gray-400">{formatMessageTime(chat.updatedAt)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-gray-500 truncate pr-2">{chat.lastMessage || "Start a conversation"}</p>
@@ -580,6 +651,12 @@ const ChatPage: React.FC = () => {
                           ? 'bg-brand-500 text-white rounded-tr-none' 
                           : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-700'
                         }`}>
+                          {msg.replyTo && typeof msg.replyTo === 'object' && (
+                            <div className={`mb-2 p-2 rounded-lg text-xs ${isMe ? 'bg-white/20 border-l-2 border-white' : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-brand-500'} max-w-full overflow-hidden`}>
+                              <span className="font-bold">{(msg.replyTo.senderInfo?.fullName || msg.replyTo.sender?.fullName || "User")}</span>
+                              <p className="truncate opacity-80">{msg.replyTo.message || msg.replyTo.content || "Attachment"}</p>
+                            </div>
+                          )}
                           {msg.fileType === 'image' && msg.file && (
                             <div className="mb-2 overflow-hidden rounded-lg cursor-pointer">
                               <img 
@@ -641,9 +718,16 @@ const ChatPage: React.FC = () => {
                           </div>
 
                           {/* Quick Reactions / Actions (Hidden by default) */}
-                          <div className={`absolute top-0 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1`}>
-                             <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 transition-colors">
-                               <MoreVertical className="w-4 h-4" />
+                          <div className={`absolute top-0 ${isMe ? '-left-16' : '-right-16'} opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10`}>
+                             <button onClick={() => setReplyingTo(msg)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700" title="Reply">
+                               <Reply className="w-4 h-4" />
+                             </button>
+                             <button 
+                               onClick={() => handleCopyMessage(msg)} 
+                               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700"
+                               title="Copy Message"
+                             >
+                               <Copy className="w-4 h-4" />
                              </button>
                           </div>
                         </div>
@@ -688,8 +772,20 @@ const ChatPage: React.FC = () => {
                   <motion.div 
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-end gap-2 bg-gray-100 dark:bg-gray-800 p-2 rounded-2xl"
+                    className="flex flex-col bg-gray-100 dark:bg-gray-800 p-2 rounded-2xl w-full"
                   >
+                    {replyingTo && (
+                      <div className="flex items-center justify-between bg-white dark:bg-gray-900 p-2 rounded-lg mb-2 mx-1 text-xs border-l-2 border-brand-500 shadow-sm">
+                        <div className="flex flex-col flex-1 min-w-0 pr-2">
+                          <span className="font-bold text-brand-500">Replying to {replyingTo.senderInfo?.fullName || "User"}</span>
+                          <span className="text-gray-500 truncate">{replyingTo.content || "Attachment"}</span>
+                        </div>
+                        <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full flex-shrink-0 text-gray-400 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-end gap-2">
                     <div className="flex gap-1">
                       <button 
                         onClick={() => fileInputRef.current?.click()}
@@ -741,6 +837,7 @@ const ChatPage: React.FC = () => {
                       >
                         <Send className="w-5 h-5" />
                       </motion.button>
+                    </div>
                     </div>
                   </motion.div>
                 )}
