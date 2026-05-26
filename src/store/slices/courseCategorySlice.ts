@@ -64,7 +64,8 @@ const initialState: CourseCategoryState = {
     },
 };
 
-const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'https://api.edrilla.com';
+// Use axiosInstance with relative paths so dev proxy handles requests
+const API_BASE_URL = '';
 
 // Define the SubCategory interface
 interface SubCategory {
@@ -154,9 +155,7 @@ export const fetchCourseCategories = createAsyncThunk<
             queryParams: queryParams.toString()
         });
 
-        const response = await axios.get(
-            `${API_BASE_URL}/coursecategories/?${queryParams.toString()}`
-        );
+        const response = await axiosInstance.get(`/coursecategories/?${queryParams.toString()}`);
 
         console.log('Fetched course categories:', response.data);
         
@@ -181,7 +180,7 @@ export const deleteCourseCategory = createAsyncThunk<
     string
 >('courseCategories/delete', async (categoryId, { rejectWithValue }) => {
     try {
-        await axiosInstance.delete(`${API_BASE_URL}/coursecategories/${categoryId}`);
+        await axiosInstance.delete(`/coursecategories/${categoryId}`);
         return categoryId;
     } catch (err: any) {
         return rejectWithValue(err.response?.data?.message || err.message);
@@ -194,7 +193,7 @@ export const createCourseCategory = createAsyncThunk<
 >('courseCategories/create', async (categoryData, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post(
-            `${API_BASE_URL}/coursecategories/`,
+            `/coursecategories/`,
             categoryData,
             {
                 headers: {
@@ -213,7 +212,7 @@ export const deleteSubCategory = createAsyncThunk<
     { subCategoryId: string; categoryId: string }
 >('subCategories/delete', async ({ subCategoryId }, { rejectWithValue }) => {
     try {
-        await axiosInstance.delete(`${API_BASE_URL}/subcategories/${subCategoryId}`);
+        await axiosInstance.delete(`/subcategories/${subCategoryId}`);
         return { subCategoryId, categoryId: '' };
     } catch (err: any) {
         return rejectWithValue(err.response?.data?.message || err.message);
@@ -226,7 +225,7 @@ export const updateCourseCategory = createAsyncThunk<
 >('courseCategories/update', async ({ categoryId, formData }, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.put(
-            `${API_BASE_URL}/coursecategories/${categoryId}`,
+            `/coursecategories/${categoryId}`,
             formData,
             {
                 headers: {
@@ -246,7 +245,7 @@ export const fetchCourseCategoryById = createAsyncThunk<
 >('courseCategories/fetchById', async (categoryId, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get(
-            `${API_BASE_URL}/coursecategories/${categoryId}`
+            `/coursecategories/${categoryId}`
         );
         return response.data?.data?.category;
     } catch (err: any) {
@@ -260,7 +259,7 @@ export const updateSubCategory = createAsyncThunk<
 >('subCategories/update', async ({ subCategoryId, data }, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.put(
-            `${API_BASE_URL}/subcategories/${subCategoryId}`,
+            `/subcategories/${subCategoryId}`,
             data,
             {
                 headers: {

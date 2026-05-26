@@ -127,15 +127,7 @@ export const fetchCouponById = createAsyncThunk(
     try {
       console.log("API Call: GET /coupons/" + id);
       // Add cache-busting headers to prevent 304 Not Modified responses
-      const res = await axiosInstance.get(`/coupons/${id}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
-        params: {
-          _t: Date.now() // Add timestamp to query string to bust cache
-        }
-      });
+      const res = await axiosInstance.get(`/coupons/${id}`);
       console.log("API Response:", res.data);
       return res.data;
     } catch (err: any) {
@@ -220,8 +212,19 @@ const couponsSlice = createSlice({
       .addCase(fetchCoupons.fulfilled, (state, action) => { 
         state.loading = false; 
         state.data = action.payload;
-        if (action.payload.data?.pagination) {
-          state.pagination = action.payload.data.pagination;
+
+        // Normalize pagination: support both { data: { pagination: {...} } }
+        // and { data: { coupons: [...], total, page, limit, totalPages } }
+        const respData = action.payload?.data || {};
+
+        if (respData.pagination && typeof respData.pagination === 'object') {
+          state.pagination = respData.pagination;
+        } else {
+          const page = Number(respData.page) || state.pagination.page;
+          const limit = Number(respData.limit) || state.pagination.limit;
+          const total = Number(respData.total) || (Array.isArray(respData.coupons) ? respData.coupons.length : state.pagination.total);
+          const totalPages = Number(respData.totalPages) || Math.ceil(total / limit) || state.pagination.totalPages;
+          state.pagination = { page, limit, total, totalPages };
         }
       })
       .addCase(fetchCoupons.rejected, (state, action) => { 
