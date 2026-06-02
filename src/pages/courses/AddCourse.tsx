@@ -364,6 +364,8 @@ const AddCourse = () => {
   const [customTag, setCustomTag] = useState("");
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [verticalCarouselImageFile, setVerticalCarouselImageFile] = useState<File | null>(null);
+  const [featuredImageBannerFile, setFeaturedImageBannerFile] = useState<File | null>(null);
   const [demoVideoUrl, setDemoVideoUrl] = useState("");
   const [description, setDescription] = useState("");
   const [seoContent, setSeoContent] = useState("");
@@ -660,6 +662,8 @@ const AddCourse = () => {
 
     if (thumbnailFile) submitFormData.append("thumbnail", thumbnailFile);
     if (coverImageFile) submitFormData.append("coverImage", coverImageFile);
+    if (verticalCarouselImageFile) submitFormData.append("verticalCarouselImage", verticalCarouselImageFile);
+    if (featuredImageBannerFile) submitFormData.append("featuredImageBanner", featuredImageBannerFile);
     if (formData.mentorImageFile) {
       submitFormData.set("mentorImage", formData.mentorImageFile);
     }
@@ -758,6 +762,8 @@ const AddCourse = () => {
       setSelectedTags([]);
       setThumbnailFile(null);
       setCoverImageFile(null);
+      setVerticalCarouselImageFile(null);
+      setFeaturedImageBannerFile(null);
       setDemoVideoUrl("");
     } catch (error: any) {
       // Extract the actual error message from the server response
@@ -1089,6 +1095,22 @@ const AddCourse = () => {
                     icon={Image}
                   />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FileUpload
+                    label="Vertical Carousel Image"
+                    accept="image/*"
+                    onFileChange={(file) => setVerticalCarouselImageFile(file)}
+                    currentFile={verticalCarouselImageFile}
+                    icon={Image}
+                  />
+                  <FileUpload
+                    label="Featured Image Banner"
+                    accept="image/*"
+                    onFileChange={(file) => setFeaturedImageBannerFile(file)}
+                    currentFile={featuredImageBannerFile}
+                    icon={Image}
+                  />
+                </div>
                 {formErrors.thumbnailFile && (
                   <p className="mt-2 text-xs text-red-600">{formErrors.thumbnailFile}</p>
                 )}
@@ -1120,6 +1142,36 @@ const AddCourse = () => {
                         className="h-48 w-full object-cover rounded-lg"
                         src={getUrlFromFile(coverImageFile)}
                         alt="Cover Image Preview"
+                      />
+                    </div>
+                  )}
+                  {verticalCarouselImageFile && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setVerticalCarouselImageFile(null)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <img
+                        className="h-48 w-full object-cover rounded-lg"
+                        src={getUrlFromFile(verticalCarouselImageFile)}
+                        alt="Vertical Carousel Image Preview"
+                      />
+                    </div>
+                  )}
+                  {featuredImageBannerFile && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setFeaturedImageBannerFile(null)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <img
+                        className="h-48 w-full object-cover rounded-lg"
+                        src={getUrlFromFile(featuredImageBannerFile)}
+                        alt="Featured Image Banner Preview"
                       />
                     </div>
                   )}

@@ -1278,7 +1278,7 @@ const EditCourse = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FileUpload
-                        label="Horizontal Carousel Image"
+                        label="Vertical Carousel Image"
                         accept="image/*"
                         onFileChange={setVerticalCarouselImageFile}
                         currentFile={verticalCarouselImageFile}
@@ -1309,6 +1309,18 @@ const EditCourse = () => {
                         <div>
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Cover Image</p>
                           <img src={`${baseUrl}${formData.coverImage}`} alt="Cover" className="w-full h-auto rounded-lg" />
+                        </div>
+                      )}
+                      {formData.verticalCarouselImage && !verticalCarouselImageFile && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Vertical Carousel Image</p>
+                          <img src={`${baseUrl}${formData.verticalCarouselImage}`} alt="Vertical Carousel" className="w-full h-auto rounded-lg" />
+                        </div>
+                      )}
+                      {formData.featuredImageBanner && !featuredImageBannerFile && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Current Featured Image Banner</p>
+                          <img src={`${baseUrl}${formData.featuredImageBanner}`} alt="Featured Image Banner" className="w-full h-auto rounded-lg" />
                         </div>
                       )}
                     </div>
