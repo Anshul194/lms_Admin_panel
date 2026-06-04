@@ -9,6 +9,7 @@ import {
     fetchMeetingParticipants,
     fetchReports,
 } from "../../store/slices/zoomSlice";
+import { fetchCourses, getAllCourses } from "../../store/slices/course";
 import {
     Video,
     Plus,
@@ -26,6 +27,7 @@ const ZoomMeetings: React.FC = () => {
     const { meetings, reports, participants, loading, error } = useSelector(
         (state: RootState) => state.zoom
     );
+    const courses = useSelector(getAllCourses);
 
     const [activeTab, setActiveTab] = useState<"upcoming" | "reports">("upcoming");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,9 +40,11 @@ const ZoomMeetings: React.FC = () => {
         duration: 60,
         agenda: "",
         timezone: "Asia/Kolkata",
+        courseId: "",
     });
 
     useEffect(() => {
+        dispatch(fetchCourses({ page: 1, limit: 100 })); // Fetch more to show in dropdown
         if (activeTab === "upcoming") {
             dispatch(fetchMeetings());
         } else {
@@ -75,6 +79,7 @@ const ZoomMeetings: React.FC = () => {
                 duration: 60,
                 agenda: "",
                 timezone: "Asia/Kolkata",
+                courseId: "",
             });
         }
     };
@@ -106,22 +111,20 @@ const ZoomMeetings: React.FC = () => {
             <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
                 <button
                     onClick={() => setActiveTab("upcoming")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                        activeTab === "upcoming"
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === "upcoming"
                             ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
                             : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
+                        }`}
                 >
                     <Activity size={18} />
                     Upcoming
                 </button>
                 <button
                     onClick={() => setActiveTab("reports")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                        activeTab === "reports"
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === "reports"
                             ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
                             : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
+                        }`}
                 >
                     <ClipboardList size={18} />
                     Past Meetings
@@ -189,6 +192,12 @@ const ZoomMeetings: React.FC = () => {
                                                         minute: "2-digit",
                                                     })} ({meeting.duration}m)
                                                 </div>
+                                                {meeting.courseId && (
+                                                    <div className="flex items-center gap-2 text-sm font-semibold text-brand-500">
+                                                        <Activity size={14} />
+                                                        Course Linked
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -358,6 +367,22 @@ const ZoomMeetings: React.FC = () => {
                                         onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                                     />
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Linked Course (Optional)</label>
+                                <select
+                                    className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500/20 text-gray-900 dark:text-white outline-none"
+                                    value={formData.courseId}
+                                    onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
+                                >
+                                    <option value="">No course (All students see this)</option>
+                                    {courses.map((course: any) => (
+                                        <option key={course._id} value={course._id}>
+                                            {course.title}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-gray-500 mt-1">If selected, only enrolled students will see this meeting.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Agenda</label>
