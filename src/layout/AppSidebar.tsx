@@ -15,6 +15,7 @@ import {
   TableIcon,
   UserCircleIcon,
   TaskIcon,
+  VideoIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -214,6 +215,11 @@ const navItems: NavItem[] = [
       // { name: "Gradebook", path: "/grades/gradebook" },
       // { name: "Reports", path: "/grades/reports" },
     ],
+  },
+  {
+    icon: <VideoIcon />,
+    name: "Live Classes",
+    path: "/live-classes",
   },
   // {
   //   icon: <CalenderIcon />,
@@ -588,18 +594,18 @@ const AppSidebar: React.FC = () => {
             </div>
             {userRole !== "news_editor" && (
               <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                    }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Others"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
                 {renderMenuItems(othersItems, "others")}
               </div>
             )}

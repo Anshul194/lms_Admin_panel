@@ -23,7 +23,7 @@ import dashboardReducer from "./slices/dashboard";
 import issueCertificate from "./slices/IssuesCertification";
 import salesAnalyticsReducer from "./slices/salesAnalyticsSlice";
 import queryReducer from "./slices/query";
-import couponsReducer from "./slices/couponsSlice"; 
+import couponsReducer from "./slices/couponsSlice";
 import thread from "./slices/forumSlice"
 import notification from "./slices/notification";
 import deviceApprovalsReducer from "./slices/deviceApprovals";
@@ -33,6 +33,7 @@ import leaderboard from "./slices/leaderboard";
 import banner from "./slices/banner";
 import news from "./slices/news";
 import securityReducer from "./slices/securitySlice";
+import zoomReducer from "./slices/zoomSlice";
 
 export const store = configureStore({
   reducer: {
@@ -63,12 +64,13 @@ export const store = configureStore({
     forum: thread,
     notification: notification,
     deviceApprovals: deviceApprovalsReducer,
-    event:event,
-    job:job,
-    leaderboard:leaderboard,
-    banner:banner,
-    news:news,
-    security: securityReducer
+    event: event,
+    job: job,
+    leaderboard: leaderboard,
+    banner: banner,
+    news: news,
+    security: securityReducer,
+    zoom: zoomReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

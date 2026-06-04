@@ -73,6 +73,7 @@ import ManageQuestions from "./pages/PersonalityTest/ManageQuestions";
 import ChatPage from "./pages/Chat/ChatPage";
 import AITool from "./pages/AITool/AITool";
 import SecurityIncidents from "./pages/Security/Incidents";
+import ZoomMeetings from "./pages/LiveClasses/ZoomMeetings";
 
 // Lazy load pages
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
@@ -205,7 +206,7 @@ export default function App() {
               />
 
 
-<Route path="/reporters/add" element={<AddReporter />} />
+              <Route path="/reporters/add" element={<AddReporter />} />
 
               {/* Bundles */}
               <Route path="/bundles/create" element={<AddBundle />} />
@@ -335,6 +336,7 @@ export default function App() {
               <Route path="/leaderboard-setting" element={<LeaderboardSetting />} />
               <Route path="/personality-test" element={<ManageQuestions />} />
               <Route path="/security-incidents" element={<SecurityIncidents />} />
+              <Route path="/live-classes" element={<ZoomMeetings />} />
             </Route>
           </Route>
 
