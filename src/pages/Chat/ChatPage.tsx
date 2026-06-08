@@ -4,13 +4,13 @@ import { selectCurrentUser, selectToken } from "../../store/slices/authslice";
 import { chatService } from "../../services/chatService";
 import { useAppDispatch } from "../../hooks/redux";
 import { fetchAllStudents } from "../../store/slices/students";
-import { 
-  Search, 
-  Send, 
-  Paperclip, 
-  Mic, 
-  MoreVertical, 
-  User, 
+import {
+  Search,
+  Send,
+  Paperclip,
+  Mic,
+  MoreVertical,
+  User,
   BookOpen,
   Image as ImageIcon,
   File as FileIcon,
@@ -75,31 +75,31 @@ const ChatPage: React.FC = () => {
   const resolveMediaUrl = (path: string | undefined) => {
     if (!path) return "";
     if (path.startsWith("http")) return path;
-    
-    let baseUrl = import.meta.env.VITE_IMAGE_URL || "http://localhost:5000/uploads";
-    
+
+    let baseUrl = import.meta.env.VITE_IMAGE_URL || `${import.meta.env.VITE_BASE_URL}/uploads`;
+
     // Auto-detect local development
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      baseUrl = "http://localhost:5000/uploads";
+      baseUrl = `${import.meta.env.VITE_BASE_URL}/uploads`;
     }
-    
+
     // If the path already starts with /uploads, and the baseUrl also ends with /uploads, fix it
     const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-    
+
     let resolvedUrl = "";
     if (cleanPath.startsWith("uploads/") && baseUrl.endsWith("/uploads")) {
       resolvedUrl = `${baseUrl.replace(/\/uploads$/, "")}/${cleanPath}`;
     } else {
       resolvedUrl = `${baseUrl}/${cleanPath}`;
     }
-    
+
     // console.log(`Resolving media: ${path} -> ${resolvedUrl}`);
     return resolvedUrl;
   };
-  
+
   const { students } = useSelector((state: any) => state.students);
   const dispatch = useAppDispatch();
-  
+
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -109,7 +109,7 @@ const ChatPage: React.FC = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [subFilter, setSubFilter] = useState<'all' | 'unread'>('unread');
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -162,7 +162,7 @@ const ChatPage: React.FC = () => {
 
       const allRooms = [...directRooms, ...courseRooms];
       console.log("Mapped all rooms:", allRooms);
-      
+
       setChats(prev => {
         const existingIds = new Set(allRooms.map((r: any) => r.id));
         const filteredPrev = prev.filter(p => !existingIds.has(p.id));
@@ -191,24 +191,24 @@ const ChatPage: React.FC = () => {
         replyTo: m.replyTo
       })).reverse(); // Backend returns latest first
       setMessages(formattedMessages);
-      
+
       setTimeout(() => {
         if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
       }, 100);
-      
+
       let readEndpoint = "/chat/message/read";
       let payload: any = { roomId, senderId: selectedChat?.participantId };
-      
+
       if (selectedChat?.type === 'course') {
         readEndpoint = "/chat/course/message/read";
         payload = { courseChatRoomId: roomId };
       }
 
       axiosInstance.patch(readEndpoint, payload);
-      
-      setChats(prev => prev.map(chat => 
+
+      setChats(prev => prev.map(chat =>
         chat.id === roomId ? { ...chat, unreadCount: 0 } : chat
       ));
     } catch (err) {
@@ -227,7 +227,7 @@ const ChatPage: React.FC = () => {
         participantId: s._id,
         updatedAt: new Date(0).toISOString()
       }));
-      
+
       setChats(prev => {
         const existingParticipantIds = new Set(prev.map(p => p.participantId));
         const newStudents = studentChats.filter(s => !existingParticipantIds.has(s.id));
@@ -261,7 +261,7 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     if (token && currentUser) {
       const socket = chatService.connect(token);
-      
+
       socket.on("typing", ({ userId, roomId }: { userId: string, roomId: string }) => {
         if (roomId === selectedChat?.id && userId !== currentUser.id) {
           setIsTypingRemote(true);
@@ -285,7 +285,7 @@ const ChatPage: React.FC = () => {
     if (selectedChat?.id && currentUser?.id) {
       const socket = chatService.getSocket();
       socket?.emit("typing", { userId: currentUser.id, roomId: selectedChat.id });
-      
+
       // Stop typing after 2 seconds of inactivity
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
@@ -317,11 +317,11 @@ const ChatPage: React.FC = () => {
             senderInfo: msg.sender, // Store sender info for multi-user chats (courses)
             replyTo: msg.replyTo
           }]);
-          
+
           // Mark as read immediately if it's the current chat
           let readEndpoint = "/chat/message/read";
           let payload: any = { roomId: msg.chatRoomId, senderId: senderId };
-          
+
           if (msg.courseChatRoomId) {
             readEndpoint = "/chat/course/message/read";
             payload = { courseChatRoomId: msg.courseChatRoomId };
@@ -348,8 +348,8 @@ const ChatPage: React.FC = () => {
     const roomId = msg.chatRoomId || msg.groupChatRoomId || msg.courseChatRoomId;
     setChats(prev => prev.map(chat => {
       if (chat.id === roomId) {
-        return { 
-          ...chat, 
+        return {
+          ...chat,
           lastMessage: msg.message || "File",
           updatedAt: msg.createdAt || new Date().toISOString(),
           unreadCount: isCurrentChat ? 0 : (isMe ? chat.unreadCount : chat.unreadCount + 1)
@@ -446,7 +446,7 @@ const ChatPage: React.FC = () => {
     if (file && selectedChat) {
       const formData = new FormData();
       formData.append("files", file);
-      
+
       let endpoint = "/chat/message";
       if (selectedChat.type === 'direct') {
         formData.append("receiverId", selectedChat.participantId);
@@ -471,7 +471,7 @@ const ChatPage: React.FC = () => {
   return (
     <div className="flex h-[calc(100vh-120px)] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800">
       <PageMeta title="Messages | LMS Admin" />
-      
+
       {/* Sidebar */}
       <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
@@ -480,12 +480,12 @@ const ChatPage: React.FC = () => {
             <div className="flex gap-2">
             </div>
           </div>
-          
+
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <input
+              type="text"
+              placeholder="Search..."
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:text-white transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -493,13 +493,13 @@ const ChatPage: React.FC = () => {
           </div>
 
           <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <button 
+            <button
               onClick={() => setActiveTab('direct')}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === 'direct' ? 'bg-white dark:bg-gray-700 shadow-sm text-brand-500' : 'text-gray-500'}`}
             >
               Direct
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('course')}
               className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === 'course' ? 'bg-white dark:bg-gray-700 shadow-sm text-brand-500' : 'text-gray-500'}`}
             >
@@ -508,13 +508,13 @@ const ChatPage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 mt-3 border-b border-gray-100 dark:border-gray-800 pb-2">
-            <button 
+            <button
               onClick={() => setSubFilter('all')}
               className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${subFilter === 'all' ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-800/40'}`}
             >
               All
             </button>
-            <button 
+            <button
               onClick={() => setSubFilter('unread')}
               className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${subFilter === 'unread' ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/20' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-800/40'}`}
             >
@@ -522,7 +522,7 @@ const ChatPage: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto no-scrollbar">
           <div className="p-2 space-y-1">
             {(() => {
@@ -533,32 +533,31 @@ const ChatPage: React.FC = () => {
               }
               const filtered = chats.filter(c => c.type === activeTab && (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()));
               console.log(`Filtered count for ${activeTab}: ${filtered.length}`);
-              
+
               const sorted = [...filtered].sort((a, b) => {
                 if (subFilter === 'unread') {
                   if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
                   if (b.unreadCount > 0 && a.unreadCount === 0) return 1;
                 }
-                
+
                 const dateA = new Date(a.updatedAt || 0).getTime();
                 const dateB = new Date(b.updatedAt || 0).getTime();
                 return dateB - dateA;
               });
-              
+
               return sorted.map(chat => (
                 <div
                   key={chat.id}
                   onClick={() => setSelectedChat(chat)}
-                  className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${
-                    selectedChat?.id === chat.id || 
-                    (chat.participantId && selectedChat?.participantId === chat.participantId)
-                      ? 'bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800 shadow-sm' 
+                  className={`p-3 rounded-xl cursor-pointer flex items-center gap-3 transition-all ${selectedChat?.id === chat.id ||
+                      (chat.participantId && selectedChat?.participantId === chat.participantId)
+                      ? 'bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800 shadow-sm'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className="relative">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner ${chat.type === 'direct' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 'bg-gradient-to-br from-orange-400 to-orange-600'}`}>
-                      {chat.image ? <img src={chat.image} className="w-full h-full rounded-full object-cover" alt="" onError={(e) => e.currentTarget.style.display='none'} /> : (chat.name || "?").charAt(0)}
+                      {chat.image ? <img src={chat.image} className="w-full h-full rounded-full object-cover" alt="" onError={(e) => e.currentTarget.style.display = 'none'} /> : (chat.name || "?").charAt(0)}
                     </div>
                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-900 rounded-full shadow-sm"></div>
                   </div>
@@ -579,7 +578,7 @@ const ChatPage: React.FC = () => {
                 </div>
               ));
             })()}
-            
+
             {chats.filter(c => c.type === activeTab).length === 0 && (
               <div className="flex flex-col items-center justify-center p-8 text-center text-gray-400">
                 <Search className="w-12 h-12 mb-3 opacity-20" />
@@ -621,7 +620,7 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div 
+            <div
               ref={scrollRef}
               className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-gray-50/30 dark:bg-gray-950/30"
             >
@@ -636,7 +635,7 @@ const ChatPage: React.FC = () => {
                 messages.map((msg, idx) => {
                   const isMe = msg.sender === currentUser?.id || msg.sender === (currentUser as any)._id;
                   return (
-                    <motion.div 
+                    <motion.div
                       key={msg._id || idx}
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -646,11 +645,10 @@ const ChatPage: React.FC = () => {
                         {!isMe && selectedChat?.type !== 'direct' && (
                           <span className="text-[10px] text-gray-500 mb-1 ml-2">{msg.senderInfo?.fullName || "User"}</span>
                         )}
-                        <div className={`group relative p-3 rounded-2xl shadow-sm transition-all hover:shadow-md ${
-                          isMe 
-                          ? 'bg-brand-500 text-white rounded-tr-none' 
-                          : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-700'
-                        }`}>
+                        <div className={`group relative p-3 rounded-2xl shadow-sm transition-all hover:shadow-md ${isMe
+                            ? 'bg-brand-500 text-white rounded-tr-none'
+                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-700'
+                          }`}>
                           {msg.replyTo && typeof msg.replyTo === 'object' && (
                             <div className={`mb-2 p-2 rounded-lg text-xs ${isMe ? 'bg-white/20 border-l-2 border-white' : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-brand-500'} max-w-full overflow-hidden`}>
                               <span className="font-bold">{(msg.replyTo.senderInfo?.fullName || msg.replyTo.sender?.fullName || "User")}</span>
@@ -659,10 +657,10 @@ const ChatPage: React.FC = () => {
                           )}
                           {msg.fileType === 'image' && msg.file && (
                             <div className="mb-2 overflow-hidden rounded-lg cursor-pointer">
-                              <img 
-                                src={resolveMediaUrl(msg.file)} 
-                                alt="attachment" 
-                                className="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500" 
+                              <img
+                                src={resolveMediaUrl(msg.file)}
+                                alt="attachment"
+                                className="max-w-full h-auto object-cover hover:scale-105 transition-transform duration-500"
                                 onError={(e) => {
                                   // fallback if resolveMediaUrl failed
                                   if (msg.file && !e.currentTarget.src.includes(msg.file)) {
@@ -672,7 +670,7 @@ const ChatPage: React.FC = () => {
                               />
                             </div>
                           )}
-                          
+
                           {msg.fileType === 'voice' && msg.file && (
                             <div className={`mb-2 p-2 rounded-xl flex items-center gap-3 ${isMe ? 'bg-white/10' : 'bg-gray-100 dark:bg-gray-900'}`}>
                               <button className={`w-8 h-8 rounded-full flex items-center justify-center ${isMe ? 'bg-white text-brand-500' : 'bg-brand-500 text-white'}`}>
@@ -686,7 +684,7 @@ const ChatPage: React.FC = () => {
                           )}
 
                           {msg.fileType === 'file' && msg.file && (
-                            <a 
+                            <a
                               href={resolveMediaUrl(msg.file)}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -719,16 +717,16 @@ const ChatPage: React.FC = () => {
 
                           {/* Quick Reactions / Actions (Hidden by default) */}
                           <div className={`absolute top-0 ${isMe ? '-left-16' : '-right-16'} opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10`}>
-                             <button onClick={() => setReplyingTo(msg)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700" title="Reply">
-                               <Reply className="w-4 h-4" />
-                             </button>
-                             <button 
-                               onClick={() => handleCopyMessage(msg)} 
-                               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700"
-                               title="Copy Message"
-                             >
-                               <Copy className="w-4 h-4" />
-                             </button>
+                            <button onClick={() => setReplyingTo(msg)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700" title="Reply">
+                              <Reply className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleCopyMessage(msg)}
+                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-brand-500 transition-colors bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-700"
+                              title="Copy Message"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -743,7 +741,7 @@ const ChatPage: React.FC = () => {
             <div className="p-4 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
               <AnimatePresence mode="wait">
                 {isRecording ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
@@ -754,13 +752,13 @@ const ChatPage: React.FC = () => {
                       <span className="text-red-600 dark:text-red-400 font-medium">Recording... {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
                     </div>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => { setIsRecording(false); clearInterval(timerRef.current); }}
                         className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium"
                       >
                         Cancel
                       </button>
-                      <button 
+                      <button
                         onClick={stopRecording}
                         className="px-6 py-2 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/20"
                       >
@@ -769,7 +767,7 @@ const ChatPage: React.FC = () => {
                     </div>
                   </motion.div>
                 ) : (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col bg-gray-100 dark:bg-gray-800 p-2 rounded-2xl w-full"
@@ -786,58 +784,58 @@ const ChatPage: React.FC = () => {
                       </div>
                     )}
                     <div className="flex items-end gap-2">
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-gray-500 hover:text-brand-500 transition-colors"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 text-gray-500 hover:text-brand-500 transition-colors">
-                        <ImageIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      className="hidden" 
-                      onChange={handleFileUpload}
-                    />
-                    <textarea
-                      placeholder="Type your message..."
-                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 max-h-32 resize-none no-scrollbar dark:text-white"
-                      rows={1}
-                      value={inputValue}
-                      onChange={(e) => {
-                        setInputValue(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                        handleTyping();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={startRecording}
-                        className="p-2 text-gray-500 hover:text-brand-500 transition-colors"
-                      >
-                        <Mic className="w-5 h-5" />
-                      </button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim()}
-                        className={`p-2 rounded-xl shadow-lg transition-all ${inputValue.trim() ? 'bg-brand-500 text-white shadow-brand-500/20' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                      >
-                        <Send className="w-5 h-5" />
-                      </motion.button>
-                    </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-2 text-gray-500 hover:text-brand-500 transition-colors"
+                        >
+                          <Paperclip className="w-5 h-5" />
+                        </button>
+                        <button className="p-2 text-gray-500 hover:text-brand-500 transition-colors">
+                          <ImageIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                      <textarea
+                        placeholder="Type your message..."
+                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 max-h-32 resize-none no-scrollbar dark:text-white"
+                        rows={1}
+                        value={inputValue}
+                        onChange={(e) => {
+                          setInputValue(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                          handleTyping();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
+                      />
+                      <div className="flex gap-1">
+                        <button
+                          onClick={startRecording}
+                          className="p-2 text-gray-500 hover:text-brand-500 transition-colors"
+                        >
+                          <Mic className="w-5 h-5" />
+                        </button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={handleSendMessage}
+                          disabled={!inputValue.trim()}
+                          className={`p-2 rounded-xl shadow-lg transition-all ${inputValue.trim() ? 'bg-brand-500 text-white shadow-brand-500/20' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                        >
+                          <Send className="w-5 h-5" />
+                        </motion.button>
+                      </div>
                     </div>
                   </motion.div>
                 )}

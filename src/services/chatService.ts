@@ -1,6 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 class ChatService {
   private socket: Socket | null = null;
@@ -67,15 +67,15 @@ class ChatService {
     }
   }
 
-  sendCourseChatMessage(data: { 
-    courseChatRoomId: string; 
-    message: string; 
-    fileUrl?: string; 
-    fileName?: string; 
-    fileType?: string; 
-    fileSize?: number; 
-    emoji?: string; 
-    replyTo?: string 
+  sendCourseChatMessage(data: {
+    courseChatRoomId: string;
+    message: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileType?: string;
+    fileSize?: number;
+    emoji?: string;
+    replyTo?: string
   }) {
     if (this.socket) {
       this.socket.emit("sendCourseChatMessage", data);
