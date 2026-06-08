@@ -1,21 +1,23 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchDeviceApprovals,
   updateDeviceApproval,
 } from "../store/slices/deviceApprovals";
 import {
-   CheckCircle,
-   XCircle,
-   RotateCcw,
-   Smartphone,
-   User2,
-   KeyRound,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  Smartphone,
+  User2,
+  KeyRound,
   AlertCircle,
   Clock,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Search,
+  X,
 } from "lucide-react";
 
 // Types for better type safety
@@ -80,12 +82,16 @@ export default function DeviceApprovals() {
   // Add status filter state
   const [statusFilter, setStatusFilter] = useState<string>("");
 
+  // Email search state
+  const [emailSearch, setEmailSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Add per-row loading state
   const [rowLoading, setRowLoading] = useState<{ [id: string]: boolean }>({});
 
   useEffect(() => {
-    dispatch(fetchDeviceApprovals({ page, limit, status: statusFilter || undefined }) as any);
-  }, [dispatch, page, limit, statusFilter]);
+    dispatch(fetchDeviceApprovals({ page, limit, status: statusFilter || undefined, search: emailSearch || undefined }) as any);
+  }, [dispatch, page, limit, statusFilter, emailSearch]);
 
   // Auto-clear success message
   useEffect(() => {
@@ -113,10 +119,10 @@ export default function DeviceApprovals() {
     try {
       clearActionError(id);
       setRowLoading(prev => ({ ...prev, [id]: true }));
-      
+
       // Dispatch the action and wait for it to complete
       const result = await dispatch(updateDeviceApproval({ id, status }) as any);
-      
+
       // Check if the action was successful
       if (result.type.endsWith('/fulfilled')) {
         setSuccessMessage("Device request approved successfully!");
@@ -125,7 +131,7 @@ export default function DeviceApprovals() {
       } else if (result.type.endsWith('/rejected')) {
         throw new Error(result.payload || "Failed to approve device request");
       }
-      
+
     } catch (err: any) {
       setActionErrors(prev => ({
         ...prev,
@@ -141,7 +147,7 @@ export default function DeviceApprovals() {
 
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!rejectId || !rejectReason.trim()) return;
 
     setIsSubmitting(true);
@@ -149,7 +155,7 @@ export default function DeviceApprovals() {
 
     try {
       clearActionError(rejectId!);
-      
+
       // Dispatch the action and wait for it to complete
       const result = await dispatch(
         updateDeviceApproval({
@@ -158,7 +164,7 @@ export default function DeviceApprovals() {
           rejectionReason: rejectReason.trim()
         }) as any
       );
-      
+
       // Check if the action was successful
       if (result.type.endsWith('/fulfilled')) {
         setSuccessMessage("Device request rejected successfully!");
@@ -170,7 +176,7 @@ export default function DeviceApprovals() {
       } else if (result.type.endsWith('/rejected')) {
         throw new Error(result.payload || "Failed to reject device request");
       }
-      
+
     } catch (err: any) {
       setActionErrors(prev => ({
         ...prev,
@@ -187,7 +193,7 @@ export default function DeviceApprovals() {
 
   const handleRejectCancel = () => {
     if (isSubmitting) return;
-    
+
     setShowRejectModal(false);
     setRejectId(null);
     setRejectReason("");
@@ -196,7 +202,8 @@ export default function DeviceApprovals() {
   const handleRefresh = async () => {
     setActionErrors({});
     setSuccessMessage(null);
-    setStatusFilter(""); // Reset filter on refresh
+    setStatusFilter("");
+    setEmailSearch("");
     dispatch(fetchDeviceApprovals({ page, limit }) as any);
   };
 
@@ -211,9 +218,16 @@ export default function DeviceApprovals() {
     setPage(1);
   };
 
+  // Handle email search with debounce
+  const handleEmailSearchChange = (value: string) => {
+    setEmailSearch(value);
+    setPage(1);
+  };
+
   // Add reset filters function
   const handleResetFilters = () => {
     setStatusFilter("");
+    setEmailSearch("");
     setPage(1);
   };
 
@@ -288,7 +302,7 @@ export default function DeviceApprovals() {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && !isSubmitting && handleRejectCancel()}
           role="dialog"
@@ -296,17 +310,17 @@ export default function DeviceApprovals() {
           aria-labelledby="reject-modal-title"
         >
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 transform transition-all">
-            <h2 
+            <h2
               id="reject-modal-title"
               className="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center"
             >
               <XCircle className="w-5 h-5 mr-2 text-red-500" />
               Reject Device Request
             </h2>
-            
+
             <form onSubmit={handleRejectSubmit} className="space-y-4">
               <div>
-                <label 
+                <label
                   htmlFor="reject-reason"
                   className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
@@ -328,7 +342,7 @@ export default function DeviceApprovals() {
                   {rejectReason.length}/500 characters
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
@@ -362,58 +376,81 @@ export default function DeviceApprovals() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Device Approval Requests
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Manage device access requests from users
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Status Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm dark:text-gray-300">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-            >
-              <option value="">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+              Device Approval Requests
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Manage device access requests from users
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm dark:text-gray-300">Show:</span>
-            <select
-              value={limit}
-              onChange={e => handleLimitChange(Number(e.target.value))}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Email Search */}
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={emailSearch}
+                onChange={(e) => handleEmailSearchChange(e.target.value)}
+                placeholder="Search by email..."
+                className="pl-9 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 w-52"
+              />
+              {emailSearch && (
+                <button
+                  onClick={() => handleEmailSearchChange("")}
+                  className="absolute right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Status Filter Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm dark:text-gray-300">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              >
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm dark:text-gray-300">Show:</span>
+              <select
+                value={limit}
+                onChange={e => handleLimitChange(Number(e.target.value))}
+                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            <button
+              onClick={handleResetFilters}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
+              <RotateCcw className="h-4 w-4" />
+              Reset Filters
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
-          <button
-            onClick={handleResetFilters}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset Filters
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RotateCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -481,7 +518,7 @@ export default function DeviceApprovals() {
                       <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 font-medium">
                         {(pagination?.page - 1) * (pagination?.limit || 10) + idx + 1}
                       </td>
-                      
+
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex-shrink-0">
@@ -497,7 +534,7 @@ export default function DeviceApprovals() {
                           </div>
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
@@ -513,7 +550,7 @@ export default function DeviceApprovals() {
                           )}
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4 text-xs text-gray-700 dark:text-gray-300">
                         <div className="space-y-1">
                           <div>{deviceInfo.ipAddress || 'Unknown IP'}</div>
@@ -524,7 +561,7 @@ export default function DeviceApprovals() {
                           )}
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4 text-xs">
                         <div className="flex items-center gap-2">
                           <KeyRound className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -533,7 +570,7 @@ export default function DeviceApprovals() {
                           </code>
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4">
                         <div className="flex flex-col gap-1">
                           {req.isFirstDevice && (
@@ -548,7 +585,7 @@ export default function DeviceApprovals() {
                           )}
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4">
                         {getStatusBadge(req.status)}
                         {req.rejectionReason && req.status === "rejected" && (
@@ -560,21 +597,21 @@ export default function DeviceApprovals() {
                           </div>
                         )}
                       </td>
-                      
+
                       <td className="px-4 py-4 text-xs text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(req.requestedAt)}
                         </div>
                       </td>
-                      
+
                       <td className="px-4 py-4 text-right">
                         {hasActionError && (
                           <div className="mb-2 text-xs text-red-600 dark:text-red-400">
                             {hasActionError}
                           </div>
                         )}
-                        
+
                         {req.status === "pending" ? (
                           <div className="flex justify-end gap-2">
                             <button
@@ -632,11 +669,10 @@ export default function DeviceApprovals() {
                       <button
                         key={idx}
                         onClick={() => handlePageChange(p)}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          page === p
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
+                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${page === p
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                          }`}
                       >
                         {p}
                       </button>
