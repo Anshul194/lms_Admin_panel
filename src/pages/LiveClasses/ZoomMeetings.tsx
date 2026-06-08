@@ -20,7 +20,19 @@ import {
     Users,
     Activity,
     ClipboardList,
+    Download,
+    Search,
 } from "lucide-react";
+
+const formatDuration = (seconds: number) => {
+    if (!seconds) return "0m";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+};
+
+const formatTime = (iso: string) =>
+    iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—";
 
 const ZoomMeetings: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -33,6 +45,13 @@ const ZoomMeetings: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
     const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
+    const [selectedMeetingTopic, setSelectedMeetingTopic] = useState<string>("");
+    const [participantSearch, setParticipantSearch] = useState("");
+
+    const today = new Date().toISOString().split("T")[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const [dateFrom, setDateFrom] = useState(sevenDaysAgo);
+    const [dateTo, setDateTo] = useState(today);
 
     const [formData, setFormData] = useState({
         topic: "",
@@ -44,13 +63,38 @@ const ZoomMeetings: React.FC = () => {
     });
 
     useEffect(() => {
-        dispatch(fetchCourses({ page: 1, limit: 100 })); // Fetch more to show in dropdown
+        dispatch(fetchCourses({ page: 1, limit: 100 }));
         if (activeTab === "upcoming") {
             dispatch(fetchMeetings());
         } else {
-            dispatch(fetchReports());
+            dispatch(fetchReports({ from: dateFrom, to: dateTo }));
         }
     }, [dispatch, activeTab]);
+
+    const handleFetchReports = () => {
+        dispatch(fetchReports({ from: dateFrom, to: dateTo }));
+    };
+
+    const exportParticipantsCSV = () => {
+        const filtered = participants.filter((p: any) =>
+            !participantSearch ||
+            p.name?.toLowerCase().includes(participantSearch.toLowerCase()) ||
+            p.user_email?.toLowerCase().includes(participantSearch.toLowerCase())
+        );
+        const header = "Name,Email,Join Time,Leave Time,Duration\n";
+        const rows = filtered
+            .map((p: any) =>
+                `"${p.name || ""}","${p.user_email || ""}","${p.join_time || ""}","${p.leave_time || ""}","${formatDuration(p.duration)}"`
+            )
+            .join("\n");
+        const blob = new Blob([header + rows], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `participants_${selectedMeetingId}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     const handleDelete = (id: string) => {
         if (window.confirm("Are you sure you want to delete this meeting?")) {
@@ -58,9 +102,12 @@ const ZoomMeetings: React.FC = () => {
         }
     };
 
-    const handleViewParticipants = (id: string) => {
+    const handleViewParticipants = (id: string, topic: string, uuid: string) => {
         setSelectedMeetingId(id);
-        dispatch(fetchMeetingParticipants(id));
+        setSelectedMeetingTopic(topic);
+        setParticipantSearch("");
+        // Pass the UUID so backend can fetch all past participants correctly
+        dispatch(fetchMeetingParticipants({ id, uuid }));
         setIsParticipantsModalOpen(true);
     };
 
@@ -112,8 +159,8 @@ const ZoomMeetings: React.FC = () => {
                 <button
                     onClick={() => setActiveTab("upcoming")}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === "upcoming"
-                            ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                         }`}
                 >
                     <Activity size={18} />
@@ -122,8 +169,8 @@ const ZoomMeetings: React.FC = () => {
                 <button
                     onClick={() => setActiveTab("reports")}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === "reports"
-                            ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                        ? "bg-white dark:bg-gray-700 text-brand-500 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                         }`}
                 >
                     <ClipboardList size={18} />
@@ -220,55 +267,90 @@ const ZoomMeetings: React.FC = () => {
                     )}
                 </>
             ) : (
-                <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 dark:bg-gray-900/50">
-                                    <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Topic</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Date</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Duration</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700 text-center">Participants</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {reports.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No past meetings found in the last 7 days.</td>
+                <div className="space-y-4">
+                    {/* Date Range Filter */}
+                    <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">From:</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                max={dateTo}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                                className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm rounded-lg px-3 py-2 border-none outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">To:</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                min={dateFrom}
+                                max={today}
+                                onChange={(e) => setDateTo(e.target.value)}
+                                className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm rounded-lg px-3 py-2 border-none outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                        </div>
+                        <button
+                            onClick={handleFetchReports}
+                            disabled={loading}
+                            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                        >
+                            {loading ? "Loading..." : "Apply"}
+                        </button>
+                        <span className="text-xs text-gray-400 ml-auto">{reports.length} meeting(s) found</span>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 dark:bg-gray-900/50">
+                                        <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Topic</th>
+                                        <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Date</th>
+                                        <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700">Duration</th>
+                                        <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700 text-center">Participants</th>
+                                        <th className="px-6 py-4 text-xs font-bold uppercase text-gray-400 border-b border-gray-100 dark:border-gray-700 text-right">Actions</th>
                                     </tr>
-                                ) : (
-                                    reports.map((meeting: any) => (
-                                        <tr key={meeting.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="font-semibold text-gray-900 dark:text-white">{meeting.topic}</div>
-                                                <div className="text-xs text-gray-400">ID: {meeting.id}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                                {new Date(meeting.start_time).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                                {meeting.duration} mins
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 text-xs font-bold rounded-full">
-                                                    {meeting.total_participants || 0}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleViewParticipants(meeting.id)}
-                                                    className="inline-flex items-center gap-1.5 text-brand-500 hover:text-brand-600 font-bold text-sm"
-                                                >
-                                                    <Users size={16} />
-                                                    View Details
-                                                </button>
-                                            </td>
+                                </thead>
+                                <tbody>
+                                    {reports.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-10 text-center text-gray-500">No past meetings found for the selected date range.</td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    ) : (
+                                        reports.map((meeting: any) => (
+                                            <tr key={meeting.uuid || meeting.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-semibold text-gray-900 dark:text-white">{meeting.topic}</div>
+                                                    <div className="text-xs text-gray-400">ID: {meeting.id}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                                    {new Date(meeting.start_time).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                                    {meeting.duration} mins
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="px-3 py-1 bg-brand-50 dark:bg-brand-900/20 text-brand-600 text-xs font-bold rounded-full">
+                                                        {meeting.participants_count ?? meeting.total_participants ?? 0}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        onClick={() => handleViewParticipants(meeting.id, meeting.topic, meeting.uuid)}
+                                                        className="inline-flex items-center gap-1.5 text-brand-500 hover:text-brand-600 font-bold text-sm"
+                                                    >
+                                                        <Users size={16} />
+                                                        View Details
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
@@ -276,44 +358,91 @@ const ZoomMeetings: React.FC = () => {
             {/* Participants Modal */}
             {isParticipantsModalOpen && (
                 <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/20">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl">
+                        {/* Header */}
+                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start bg-gray-50/50 dark:bg-gray-900/20">
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Users className="text-brand-500" />
-                                    Meeting Participants
+                                    {selectedMeetingTopic || "Meeting"} — Participants
                                 </h2>
-                                <p className="text-sm text-gray-500">Meeting ID: {selectedMeetingId}</p>
+                                <p className="text-sm text-gray-500 mt-0.5">
+                                    Meeting ID: {selectedMeetingId}
+                                    {!loading && (
+                                        <span className="ml-3 px-2 py-0.5 bg-brand-50 dark:bg-brand-900/20 text-brand-600 text-xs font-bold rounded-full">
+                                            {participants.length} total
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                             <button onClick={() => setIsParticipantsModalOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                         </div>
-                        <div className="p-6 max-h-[60vh] overflow-y-auto">
+
+                        {/* Search + Export */}
+                        {!loading && participants.length > 0 && (
+                            <div className="px-6 pt-4 flex gap-3">
+                                <div className="flex-1 flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-2">
+                                    <Search size={16} className="text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name or email..."
+                                        value={participantSearch}
+                                        onChange={(e) => setParticipantSearch(e.target.value)}
+                                        className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white outline-none"
+                                    />
+                                </div>
+                                <button
+                                    onClick={exportParticipantsCSV}
+                                    className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                                >
+                                    <Download size={16} />
+                                    Export CSV
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Table */}
+                        <div className="p-6 max-h-[55vh] overflow-y-auto">
                             {loading ? (
-                                <div className="text-center py-10">Loading participants...</div>
+                                <div className="text-center py-10 text-gray-500">Fetching all participants... this may take a moment.</div>
                             ) : participants.length === 0 ? (
                                 <div className="text-center py-10 text-gray-500">No participant data available for this meeting.</div>
-                            ) : (
-                                <table className="w-full text-left">
-                                    <thead className="bg-gray-50 dark:bg-gray-700/50">
-                                        <tr>
-                                            <th className="px-4 py-2 text-xs font-bold uppercase text-gray-400">Name</th>
-                                            <th className="px-4 py-2 text-xs font-bold uppercase text-gray-400">Email</th>
-                                            <th className="px-4 py-2 text-xs font-bold uppercase text-gray-400">Duration</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {participants.map((p: any, idx: number) => (
-                                            <tr key={idx}>
-                                                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{p.name || "Anonymous"}</td>
-                                                <td className="px-4 py-3 text-sm text-gray-500">{p.user_email || "N/A"}</td>
-                                                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{p.duration || 0}s</td>
+                            ) : (() => {
+                                const filtered = participants.filter((p: any) =>
+                                    !participantSearch ||
+                                    p.name?.toLowerCase().includes(participantSearch.toLowerCase()) ||
+                                    p.user_email?.toLowerCase().includes(participantSearch.toLowerCase())
+                                );
+                                return (
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                            <tr>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400">#</th>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400">Name</th>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400">Email</th>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400">Join</th>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400">Leave</th>
+                                                <th className="px-4 py-3 text-xs font-bold uppercase text-gray-400 text-right">Duration</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                            {filtered.map((p: any, idx: number) => (
+                                                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/20 transition-colors">
+                                                    <td className="px-4 py-3 text-xs text-gray-400">{idx + 1}</td>
+                                                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{p.name || "Anonymous"}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-500">{p.user_email || "—"}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-500">{formatTime(p.join_time)}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-500">{formatTime(p.leave_time)}</td>
+                                                    <td className="px-4 py-3 text-sm font-semibold text-brand-600 text-right">{formatDuration(p.duration)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                );
+                            })()}
                         </div>
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-700 text-right">
+
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 text-right">
                             <button
                                 onClick={() => setIsParticipantsModalOpen(false)}
                                 className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-bold"

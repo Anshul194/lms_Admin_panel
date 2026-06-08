@@ -73,9 +73,12 @@ export const deleteMeeting = createAsyncThunk(
 
 export const fetchMeetingParticipants = createAsyncThunk(
     "zoom/fetchMeetingParticipants",
-    async (meetingId: string, { rejectWithValue }) => {
+    async (params: { id: string | number; uuid?: string }, { rejectWithValue }) => {
         try {
-            const response = await axiosInstance.get(`/zoom/meetings/${meetingId}/participants`);
+            const { id, uuid } = params;
+            // Use numeric ID in path, pass UUID as query param for Zoom reports API
+            const query = uuid ? `?uuid=${encodeURIComponent(uuid)}` : "";
+            const response = await axiosInstance.get(`/zoom/meetings/${id}/participants${query}`);
             return response.data?.participants || response.data || [];
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message || error.message);
