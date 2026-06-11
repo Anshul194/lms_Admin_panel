@@ -155,7 +155,7 @@ const zoomSlice = createSlice({
             .addCase(deleteMeeting.fulfilled, (state, action) => {
                 state.loading = false;
                 state.meetings = state.meetings.filter(
-                    (m) => (m.id || m._id) !== action.payload
+                    (m) => (m.id || m.meeting_id || m._id) !== action.payload
                 );
             })
             .addCase(deleteMeeting.rejected, (state, action) => {

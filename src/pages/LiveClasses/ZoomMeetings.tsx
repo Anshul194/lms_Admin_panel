@@ -22,6 +22,7 @@ import {
     ClipboardList,
     Download,
     Search,
+    Repeat,
 } from "lucide-react";
 
 const formatDuration = (seconds: number) => {
@@ -56,10 +57,21 @@ const ZoomMeetings: React.FC = () => {
     const [formData, setFormData] = useState({
         topic: "",
         start_time: "",
-        duration: 60,
+        duration: 220,
         agenda: "",
         timezone: "Asia/Kolkata",
         courseId: "",
+        useExistingLink: false,
+        existingMeetingId: "",
+        existingJoinUrl: "",
+        existingPassword: "",
+        isRecurring: false,
+        recurrence: {
+            type: 2,
+            repeat_interval: 1,
+            weekly_days: "2,3,4,5,6",
+            end_date_time: "",
+        },
     });
 
     useEffect(() => {
@@ -96,7 +108,9 @@ const ZoomMeetings: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (meeting: any) => {
+        const id = meeting.meeting_id || meeting.id || meeting._id;
+        if (!id) return;
         if (window.confirm("Are you sure you want to delete this meeting?")) {
             dispatch(deleteMeeting(id));
         }
@@ -113,20 +127,52 @@ const ZoomMeetings: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = {
-            ...formData,
+        const payload: any = {
+            topic: formData.topic,
             start_time: new Date(formData.start_time).toISOString(),
+            duration: formData.duration,
+            agenda: formData.agenda,
+            timezone: formData.timezone,
+            courseId: formData.courseId,
         };
+        if (formData.useExistingLink) {
+            payload.useExistingLink = true;
+            payload.existingMeetingId = formData.existingMeetingId;
+            payload.existingJoinUrl = formData.existingJoinUrl;
+            payload.existingPassword = formData.existingPassword;
+        }
+        if (formData.isRecurring) {
+            payload.isRecurring = true;
+            payload.recurrence = {
+                type: formData.recurrence.type,
+                repeat_interval: formData.recurrence.repeat_interval,
+                weekly_days: formData.recurrence.weekly_days,
+                end_date_time: formData.recurrence.end_date_time
+                    ? new Date(formData.recurrence.end_date_time).toISOString()
+                    : undefined,
+            };
+        }
         const result = await dispatch(createMeeting(payload));
         if (createMeeting.fulfilled.match(result)) {
             setIsModalOpen(false);
             setFormData({
                 topic: "",
                 start_time: "",
-                duration: 60,
+                duration: 220,
                 agenda: "",
                 timezone: "Asia/Kolkata",
                 courseId: "",
+                useExistingLink: false,
+                existingMeetingId: "",
+                existingJoinUrl: "",
+                existingPassword: "",
+                isRecurring: false,
+                recurrence: {
+                    type: 2,
+                    repeat_interval: 1,
+                    weekly_days: "2,3,4,5,6",
+                    end_date_time: "",
+                },
             });
         }
     };
@@ -210,7 +256,7 @@ const ZoomMeetings: React.FC = () => {
                                 >
                                     <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                         <button
-                                            onClick={() => handleDelete(meeting.id)}
+                                            onClick={() => handleDelete(meeting)}
                                             className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                                         >
                                             <Trash2 size={18} />
@@ -239,6 +285,12 @@ const ZoomMeetings: React.FC = () => {
                                                         minute: "2-digit",
                                                     })} ({meeting.duration}m)
                                                 </div>
+                                                {meeting.isRecurring && (
+                                                    <div className="flex items-center gap-2 text-sm font-semibold text-green-500">
+                                                        <Repeat size={14} />
+                                                        Recurring
+                                                    </div>
+                                                )}
                                                 {meeting.courseId && (
                                                     <div className="flex items-center gap-2 text-sm font-semibold text-brand-500">
                                                         <Activity size={14} />
@@ -497,6 +549,134 @@ const ZoomMeetings: React.FC = () => {
                                     />
                                 </div>
                             </div>
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={formData.isRecurring}
+                                        onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                                </label>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                    <Repeat size={16} className="text-brand-500" />
+                                    Recurring meeting (same link for all sessions)
+                                </span>
+                            </div>
+                            {formData.isRecurring && (
+                                <div className="space-y-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Repeat on days</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                { label: "Mon", value: "2" },
+                                                { label: "Tue", value: "3" },
+                                                { label: "Wed", value: "4" },
+                                                { label: "Thu", value: "5" },
+                                                { label: "Fri", value: "6" },
+                                                { label: "Sat", value: "7" },
+                                                { label: "Sun", value: "1" },
+                                            ].map((day) => {
+                                                const days = formData.recurrence.weekly_days.split(",");
+                                                const isSelected = days.includes(day.value);
+                                                return (
+                                                    <button
+                                                        key={day.value}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            let newDays = isSelected
+                                                                ? days.filter((d) => d !== day.value)
+                                                                : [...days, day.value];
+                                                            if (newDays.length === 0) newDays = [day.value];
+                                                            setFormData({
+                                                                ...formData,
+                                                                recurrence: {
+                                                                    ...formData.recurrence,
+                                                                    weekly_days: newDays.join(","),
+                                                                },
+                                                            });
+                                                        }}
+                                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${isSelected
+                                                            ? "bg-brand-500 text-white border-brand-500"
+                                                            : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-brand-500"
+                                                            }`}
+                                                    >
+                                                        {day.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">End date</label>
+                                        <input
+                                            required
+                                            type="date"
+                                            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500/20 text-gray-900 dark:text-white outline-none"
+                                            value={formData.recurrence.end_date_time}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    recurrence: { ...formData.recurrence, end_date_time: e.target.value },
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={formData.useExistingLink}
+                                        onChange={(e) => setFormData({ ...formData, useExistingLink: e.target.checked })}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                                </label>
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Use existing Zoom link (skip auto-create)
+                                </span>
+                            </div>
+                            {formData.useExistingLink && (
+                                <div className="space-y-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Meeting ID</label>
+                                            <input
+                                                required
+                                                type="text"
+                                                placeholder="e.g. 818 6251 7185"
+                                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500/20 text-gray-900 dark:text-white outline-none"
+                                                value={formData.existingMeetingId}
+                                                onChange={(e) => setFormData({ ...formData, existingMeetingId: e.target.value.replace(/\D+/g, "") })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Passcode</label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. 456754"
+                                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500/20 text-gray-900 dark:text-white outline-none"
+                                                value={formData.existingPassword}
+                                                onChange={(e) => setFormData({ ...formData, existingPassword: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Join URL</label>
+                                        <input
+                                            required
+                                            type="url"
+                                            placeholder="https://us06web.zoom.us/j/81862517185"
+                                            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500/20 text-gray-900 dark:text-white outline-none"
+                                            value={formData.existingJoinUrl}
+                                            onChange={(e) => setFormData({ ...formData, existingJoinUrl: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Linked Course (Optional)</label>
                                 <select

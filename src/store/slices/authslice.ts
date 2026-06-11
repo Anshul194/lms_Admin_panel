@@ -35,6 +35,7 @@ export const login = createAsyncThunk<
       {
         email: credentials.email,
         password: credentials.password,
+        platform: "web",
       },
       {
         headers: {
