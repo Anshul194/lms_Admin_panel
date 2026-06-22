@@ -242,8 +242,7 @@ const ChatPage: React.FC = () => {
     if (selectedChat && selectedChat.id) {
       // If it looks like a participantId (studentId), create/get room
       // If it's already a roomId, just fetch messages
-      // We can distinguish by a flag or by checking if we have participantId without roomId
-      const isRoomId = selectedChat.id.length >= 24 && !chats.find(c => c.participantId === selectedChat.id && c.id !== selectedChat.id);
+      const isRoomId = selectedChat.id !== selectedChat.participantId;
 
       if (isRoomId) {
         fetchMessages(selectedChat.id);
@@ -252,11 +251,10 @@ const ChatPage: React.FC = () => {
           .then(res => {
             const roomId = res.data.roomId;
             setSelectedChat(prev => prev ? { ...prev, id: roomId } : null);
-            fetchMessages(roomId);
           });
       }
     }
-  }, [selectedChat?.participantId]);
+  }, [selectedChat?.id]);
 
   useEffect(() => {
     if (token && currentUser) {
@@ -473,7 +471,7 @@ const ChatPage: React.FC = () => {
       <PageMeta title="Messages | LMS Admin" />
 
       {/* Sidebar */}
-      <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col">
+      <div className="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-xl font-bold dark:text-white">Messages</h1>
@@ -590,7 +588,7 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 relative">
+      <div className="flex-1 min-w-0 flex flex-col bg-white dark:bg-gray-950 relative">
         {selectedChat ? (
           <>
             {/* Header */}
@@ -622,7 +620,7 @@ const ChatPage: React.FC = () => {
             {/* Messages */}
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-gray-50/30 dark:bg-gray-950/30"
+              className="flex-1 w-full overflow-y-auto p-6 space-y-6 no-scrollbar bg-gray-50/30 dark:bg-gray-950/30"
             >
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 space-y-4">
@@ -639,18 +637,18 @@ const ChatPage: React.FC = () => {
                       key={msg._id || idx}
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                      className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
+                      <div className={`flex flex-col max-w-[75%] min-w-0 ${isMe ? 'items-end' : 'items-start'}`}>
                         {!isMe && selectedChat?.type !== 'direct' && (
                           <span className="text-[10px] text-gray-500 mb-1 ml-2">{msg.senderInfo?.fullName || "User"}</span>
                         )}
-                        <div className={`group relative p-3 rounded-2xl shadow-sm transition-all hover:shadow-md ${isMe
+                        <div className={`group relative p-3 rounded-2xl shadow-sm transition-all hover:shadow-md min-w-0 ${msg.replyTo ? 'w-full' : ''} ${isMe
                             ? 'bg-brand-500 text-white rounded-tr-none'
                             : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-gray-700'
                           }`}>
                           {msg.replyTo && typeof msg.replyTo === 'object' && (
-                            <div className={`mb-2 p-2 rounded-lg text-xs ${isMe ? 'bg-white/20 border-l-2 border-white' : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-brand-500'} max-w-full overflow-hidden`}>
+                            <div className={`mb-2 p-2 rounded-lg text-xs ${isMe ? 'bg-white/20 border-l-2 border-white' : 'bg-gray-100 dark:bg-gray-700 border-l-2 border-brand-500'} w-full overflow-hidden`}>
                               <span className="font-bold">{(msg.replyTo.senderInfo?.fullName || msg.replyTo.sender?.fullName || "User")}</span>
                               <p className="truncate opacity-80">{msg.replyTo.message || msg.replyTo.content || "Attachment"}</p>
                             </div>
@@ -701,7 +699,7 @@ const ChatPage: React.FC = () => {
                           )}
 
                           {msg.content && (msg.fileType === 'text' || msg.fileType === 'image') && (
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap break-all">{msg.content}</p>
                           )}
 
                           <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end text-white/70' : 'justify-start text-gray-400'}`}>

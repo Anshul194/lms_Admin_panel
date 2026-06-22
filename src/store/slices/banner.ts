@@ -37,11 +37,11 @@ export const createBanner = createAsyncThunk(
     async (bannerData: Partial<Banner>, { rejectWithValue }) => {
         try {
             const res = await axiosInstance.post("/banners", bannerData,
-    {
-                headers: {
-                    "Content-Type": "mutlipart/form-data",
-                },
-            }
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
             );
             if (res.data?.success == true) {
                 setTimeout(() => {
@@ -86,11 +86,15 @@ export const fetchBannerById = createAsyncThunk(
 export const updateBanner = createAsyncThunk(
     "banner/updateBanner",
     async (
-        { id, bannerData }: { id: string; bannerData: Partial<Banner> },
+        { id, bannerData }: { id: string; bannerData: any },
         { rejectWithValue }
     ) => {
         try {
-            const res = await axiosInstance.put(`/banners/${id}`, bannerData);
+            const res = await axiosInstance.put(`/banners/${id}`, bannerData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
             return res.data;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message || err.message);
