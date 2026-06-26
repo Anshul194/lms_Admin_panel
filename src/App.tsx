@@ -74,6 +74,7 @@ import ChatPage from "./pages/Chat/ChatPage";
 import AITool from "./pages/AITool/AITool";
 import SecurityIncidents from "./pages/Security/Incidents";
 import ZoomMeetings from "./pages/LiveClasses/ZoomMeetings";
+import { AdminTrackerProvider } from "./components/AdminActivityTracker";
 
 // Lazy load pages
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
@@ -154,207 +155,209 @@ export default function App() {
 
   return (
     <Router>
-      <ScrollToTop />
-      <Suspense fallback={<div className="text-center mt-20">Loading...</div>}>
-        <Routes>
-          {/* Public Routes - Only accessible when NOT authenticated */}
-          <Route
-            path="/signin"
-            element={
-              !isAuthenticated ? <SignIn /> : <Navigate to="/" replace />
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              !isAuthenticated ? <SignUp /> : <Navigate to="/" replace />
-            }
-          />
+      <AdminTrackerProvider>
+        <ScrollToTop />
+        <Suspense fallback={<div className="text-center mt-20">Loading...</div>}>
+          <Routes>
+            {/* Public Routes - Only accessible when NOT authenticated */}
+            <Route
+              path="/signin"
+              element={
+                !isAuthenticated ? <SignIn /> : <Navigate to="/" replace />
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                !isAuthenticated ? <SignUp /> : <Navigate to="/" replace />
+              }
+            />
 
-          {/* Protected Routes - Only accessible when authenticated */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
-              <Route index path="/" element={<Home />} />
-              <Route path="/profile" element={<UserProfiles />} />
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/add-category" element={<AddCategory />} />
-              <Route path="/categories" element={<CategoryList />} />
+            {/* Protected Routes - Only accessible when authenticated */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route index path="/" element={<Home />} />
+                <Route path="/profile" element={<UserProfiles />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/add-category" element={<AddCategory />} />
+                <Route path="/categories" element={<CategoryList />} />
 
-              {/* Filters */}
-              <Route path="/filters/add" element={<AddFilter />} />
-              <Route path="/filters/all" element={<FilterList />} />
+                {/* Filters */}
+                <Route path="/filters/add" element={<AddFilter />} />
+                <Route path="/filters/all" element={<FilterList />} />
 
-              <Route path="/event/add" element={<AddEvent />} />
-              <Route path="/events" element={<EventList />} />
-              <Route path="/events/edit/:id" element={<EditEvent />} />
+                <Route path="/event/add" element={<AddEvent />} />
+                <Route path="/events" element={<EventList />} />
+                <Route path="/events/edit/:id" element={<EditEvent />} />
 
-              {/* Jobs */}
-              <Route path="/jobs/add" element={<AddJob />} />
-              <Route path="/jobs" element={<JobList />} />
-              <Route path="/jobs/edit/:id" element={<EditJob />} />
-              {/* Courses */}
-              <Route path="/courses/add" element={<AddCourse />} />
-              <Route path="/courses/all/courses" element={<CourseList />} />
-              <Route path="/courses/edit/:courseId" element={<EditCourse />} />
-              <Route
-                path="/courses/all/text-courses"
-                element={<TextLessonPage />}
-              />
-              <Route
-                path="/courses/text-courses/:lessonId"
-                element={<EditTextLessonEditor />}
-              />
-
-
-              <Route path="/reporters/add" element={<AddReporter />} />
-
-              {/* Bundles */}
-              <Route path="/bundles/create" element={<AddBundle />} />
-              <Route path="/bundles/all" element={<BundleList />} />
-              <Route path="/bundles/:bundleId" element={<EditBundleForm />} />
-
-              {/* Quiz */}
-              <Route path="/quiz/all" element={<QuizList />} />
-              <Route path="/quiz/edit/:quizId" element={<EditQuiz />} />
-
-              {/* Assignments */}
-              <Route path="/assignments/all" element={<AssignmentList />} />
-              <Route path="/assignments/:assignmentId" element={<AssignmentPage />} />
-              <Route
-                path="/assignments/edit/:assignmentId"
-                element={<EditAssignmentForm />}
-              />
-              <Route
-                path="/assignments/submissions"
-                element={<AssignmentList />}
-              />
-              <Route
-                path="/assignments/submissions/:id"
-                element={<AssignmentSubmissionReview />}
-              />
-
-              <Route path="/forum" element={<ForumThreadList />} />
-              <Route path="/forum/create" element={<EditForumThread />} />
-              <Route path="/forum/:threadId" element={<ForumDetails />} />
-              <Route path="/forum/edit/:threadId" element={<EditForumThread />} />
-
-              {/* Support Tickets */}
-              <Route
-                path="/support-tickets/view/:ticketId"
-                element={<TicketDetails isEditMode={false} />}
-              />
-              <Route
-                path="/support-tickets/edit/:ticketId"
-                element={<TicketDetails isEditMode={true} />}
-              />
-              <Route path="/requests" element={<HelpDesk />} />
-
-              {/* Certificates */}
-              <Route
-                path="/certificates-template/add"
-                element={<CreateCertificateTemplate />}
-              />
-              <Route
-                path="/certificates-template/all"
-                element={<CertificationList />}
-              />
-              <Route
-                path="/certificates-template/edit/:certificateId"
-                element={<EditCreateCertificateTemplate />}
-              />
-              <Route
-                path="/certificates/issue"
-                element={<IssueCertification />}
-
-              />
-
-              {/* Coupons */}
-              <Route path="/coupons" element={<Navigate to="/coupons/all" replace />} />
-              <Route path="/coupons/all" element={<Coupons />} />
-              <Route path="/coupons/add" element={<CreateCoupon />} />
-              <Route path="/coupons/edit/:couponId" element={<EditCoupon />} />
-
-              {/* Files */}
-              <Route path="/files/all" element={<FileList />} />
-              <Route path="/files/add" element={<AddFile />} />
-              <Route path="/files/sessions" element={<Session />} />
-              <Route path="/files/projects" element={<Project />} />
-
-              {/* Students */}
-              <Route path="/students/all" element={<StudentList />} />
-              <Route path="/students/:studentId" element={<StudentDetail />} />
-              <Route path="/students/delete-requests" element={<DeleteRequestsList />} />
-
-              {/* Forms */}
-              <Route path="/form-elements" element={<FormElements />} />
+                {/* Jobs */}
+                <Route path="/jobs/add" element={<AddJob />} />
+                <Route path="/jobs" element={<JobList />} />
+                <Route path="/jobs/edit/:id" element={<EditJob />} />
+                {/* Courses */}
+                <Route path="/courses/add" element={<AddCourse />} />
+                <Route path="/courses/all/courses" element={<CourseList />} />
+                <Route path="/courses/edit/:courseId" element={<EditCourse />} />
+                <Route
+                  path="/courses/all/text-courses"
+                  element={<TextLessonPage />}
+                />
+                <Route
+                  path="/courses/text-courses/:lessonId"
+                  element={<EditTextLessonEditor />}
+                />
 
 
-              <Route path="/banner" element={<AllBanners />} />
-              <Route path="/banner/add" element={<AddBanner />} />
-              <Route path="/banner/edit/:id" element={<EditBanner />} />
+                <Route path="/reporters/add" element={<AddReporter />} />
 
-              {/* News */}
-              <Route path="/news" element={<NewsList />} />
-              <Route path="/news/add" element={<AddNews />} />
-              <Route path="/news/view/:id" element={<ViewNews />} />
-              <Route path="/news/edit/:id" element={<EditNews />} />
+                {/* Bundles */}
+                <Route path="/bundles/create" element={<AddBundle />} />
+                <Route path="/bundles/all" element={<BundleList />} />
+                <Route path="/bundles/:bundleId" element={<EditBundleForm />} />
 
-              {/* sales analytics */}
-              <Route path="/sales/user" element={<User />} />
-              <Route path="/sales/course" element={<Course />} />
-              <Route path="/sales/bundle" element={<Bundel />} />
+                {/* Quiz */}
+                <Route path="/quiz/all" element={<QuizList />} />
+                <Route path="/quiz/edit/:quizId" element={<EditQuiz />} />
 
-              {/* query */}
-              <Route path="/queries/all" element={<QueryList />} />
+                {/* Assignments */}
+                <Route path="/assignments/all" element={<AssignmentList />} />
+                <Route path="/assignments/:assignmentId" element={<AssignmentPage />} />
+                <Route
+                  path="/assignments/edit/:assignmentId"
+                  element={<EditAssignmentForm />}
+                />
+                <Route
+                  path="/assignments/submissions"
+                  element={<AssignmentList />}
+                />
+                <Route
+                  path="/assignments/submissions/:id"
+                  element={<AssignmentSubmissionReview />}
+                />
+
+                <Route path="/forum" element={<ForumThreadList />} />
+                <Route path="/forum/create" element={<EditForumThread />} />
+                <Route path="/forum/:threadId" element={<ForumDetails />} />
+                <Route path="/forum/edit/:threadId" element={<EditForumThread />} />
+
+                {/* Support Tickets */}
+                <Route
+                  path="/support-tickets/view/:ticketId"
+                  element={<TicketDetails isEditMode={false} />}
+                />
+                <Route
+                  path="/support-tickets/edit/:ticketId"
+                  element={<TicketDetails isEditMode={true} />}
+                />
+                <Route path="/requests" element={<HelpDesk />} />
+
+                {/* Certificates */}
+                <Route
+                  path="/certificates-template/add"
+                  element={<CreateCertificateTemplate />}
+                />
+                <Route
+                  path="/certificates-template/all"
+                  element={<CertificationList />}
+                />
+                <Route
+                  path="/certificates-template/edit/:certificateId"
+                  element={<EditCreateCertificateTemplate />}
+                />
+                <Route
+                  path="/certificates/issue"
+                  element={<IssueCertification />}
+
+                />
+
+                {/* Coupons */}
+                <Route path="/coupons" element={<Navigate to="/coupons/all" replace />} />
+                <Route path="/coupons/all" element={<Coupons />} />
+                <Route path="/coupons/add" element={<CreateCoupon />} />
+                <Route path="/coupons/edit/:couponId" element={<EditCoupon />} />
+
+                {/* Files */}
+                <Route path="/files/all" element={<FileList />} />
+                <Route path="/files/add" element={<AddFile />} />
+                <Route path="/files/sessions" element={<Session />} />
+                <Route path="/files/projects" element={<Project />} />
+
+                {/* Students */}
+                <Route path="/students/all" element={<StudentList />} />
+                <Route path="/students/:studentId" element={<StudentDetail />} />
+                <Route path="/students/delete-requests" element={<DeleteRequestsList />} />
+
+                {/* Forms */}
+                <Route path="/form-elements" element={<FormElements />} />
 
 
-              <Route path="/security/incidents" element={<SecurityIncidents />} />
+                <Route path="/banner" element={<AllBanners />} />
+                <Route path="/banner/add" element={<AddBanner />} />
+                <Route path="/banner/edit/:id" element={<EditBanner />} />
 
-              {/* User Profiles */}
+                {/* News */}
+                <Route path="/news" element={<NewsList />} />
+                <Route path="/news/add" element={<AddNews />} />
+                <Route path="/news/view/:id" element={<ViewNews />} />
+                <Route path="/news/edit/:id" element={<EditNews />} />
 
-              {/* Tables */}
-              <Route path="/basic-tables" element={<BasicTables />} />
+                {/* sales analytics */}
+                <Route path="/sales/user" element={<User />} />
+                <Route path="/sales/course" element={<Course />} />
+                <Route path="/sales/bundle" element={<Bundel />} />
+
+                {/* query */}
+                <Route path="/queries/all" element={<QueryList />} />
 
 
-              {/* UI Elements */}
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/avatars" element={<Avatars />} />
-              <Route path="/badge" element={<Badges />} />
-              <Route path="/buttons" element={<Buttons />} />
-              <Route path="/images" element={<Images />} />
-              <Route path="/videos" element={<Videos />} />
-              <Route path="/send-notification" element={<NotificationDashboard />} />
-              <Route path="/notification-history" element={<NotificationList />} />
-              <Route path="/device-approvals" element={<DeviceApprovals />} />
-              {/* Testimonials */}
-              <Route path="/testimonials" element={<TestimonialsPage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/ai-tool" element={<AITool />} />
-              {/* Charts */}
-              <Route path="/line-chart" element={<LineChart />} />
-              <Route path="/bar-chart" element={<BarChart />} />
-              <Route path="/leaderboard-setting" element={<LeaderboardSetting />} />
-              <Route path="/personality-test" element={<ManageQuestions />} />
-              <Route path="/security-incidents" element={<SecurityIncidents />} />
-              <Route path="/live-classes" element={<ZoomMeetings />} />
+                <Route path="/security/incidents" element={<SecurityIncidents />} />
+
+                {/* User Profiles */}
+
+                {/* Tables */}
+                <Route path="/basic-tables" element={<BasicTables />} />
+
+
+                {/* UI Elements */}
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/avatars" element={<Avatars />} />
+                <Route path="/badge" element={<Badges />} />
+                <Route path="/buttons" element={<Buttons />} />
+                <Route path="/images" element={<Images />} />
+                <Route path="/videos" element={<Videos />} />
+                <Route path="/send-notification" element={<NotificationDashboard />} />
+                <Route path="/notification-history" element={<NotificationList />} />
+                <Route path="/device-approvals" element={<DeviceApprovals />} />
+                {/* Testimonials */}
+                <Route path="/testimonials" element={<TestimonialsPage />} />
+                <Route path="/chat" element={<ChatPage />} />
+                <Route path="/ai-tool" element={<AITool />} />
+                {/* Charts */}
+                <Route path="/line-chart" element={<LineChart />} />
+                <Route path="/bar-chart" element={<BarChart />} />
+                <Route path="/leaderboard-setting" element={<LeaderboardSetting />} />
+                <Route path="/personality-test" element={<ManageQuestions />} />
+                <Route path="/security-incidents" element={<SecurityIncidents />} />
+                <Route path="/live-classes" element={<ZoomMeetings />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Redirect unauthenticated users to signup instead of signin */}
-          <Route
-            path="*"
-            element={
-              !isAuthenticated ? (
-                <Navigate to="/signup" replace />
-              ) : (
-                <NotFound />
-              )
-            }
-          />
-        </Routes>
-        {/* SignIn Popup */}
-        <SignInModal open={showSignIn && window.location.pathname !== "/signin" && window.location.pathname !== "/signup"} onClose={() => setShowSignIn(false)} />
-      </Suspense>
+            {/* Redirect unauthenticated users to signup instead of signin */}
+            <Route
+              path="*"
+              element={
+                !isAuthenticated ? (
+                  <Navigate to="/signup" replace />
+                ) : (
+                  <NotFound />
+                )
+              }
+            />
+          </Routes>
+          {/* SignIn Popup */}
+          <SignInModal open={showSignIn && window.location.pathname !== "/signin" && window.location.pathname !== "/signup"} onClose={() => setShowSignIn(false)} />
+        </Suspense>
+      </AdminTrackerProvider>
     </Router>
   );
 }
