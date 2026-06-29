@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import DOMPurify from "dompurify";
 import {
   BookOpen,
   Calendar,
@@ -353,7 +354,7 @@ const AssignmentPage = () => {
               <div className="bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                 <div
                   className="text-gray-900 dark:text-white/70 prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: assignment.description }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(assignment.description) }}
                 />
               </div>
             ) : (
@@ -471,7 +472,7 @@ const AssignmentPage = () => {
                   </div>
                 </div>
               </div>
-             
+
             </div>
             <div className="mt-6 flex gap-3">
               {assignment?.courseId?._id && (

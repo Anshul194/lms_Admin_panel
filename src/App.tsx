@@ -4,8 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import React from "react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import AddFilter from "./components/filters/AddFilter";
@@ -78,7 +77,6 @@ import { AdminTrackerProvider } from "./components/AdminActivityTracker";
 
 // Lazy load pages
 const SignIn = lazy(() => import("./pages/AuthPages/SignIn"));
-const SignUp = lazy(() => import("./pages/AuthPages/SignUp"));
 const NotFound = lazy(() => import("./pages/OtherPage/NotFound"));
 
 const UserProfiles = lazy(() => import("./pages/UserProfiles"));
@@ -102,56 +100,9 @@ const CreateCertificateTemplate = lazy(
   () => import("./pages/Certification/CreateCertificateTemplate")
 );
 
-// Simple modal wrapper for SignIn
-function SignInModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        zIndex: 9999,
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 8,
-          padding: 32,
-          minWidth: 350,
-          boxShadow: "0 2px 16px rgba(0,0,0,0.2)",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <Suspense fallback={<div>Loading...</div>}>
-          <SignIn />
-        </Suspense>
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const [showSignIn, setShowSignIn] = useState(false);
-
-  // Show popup if not authenticated and not on /signin or /signup
-  // (You may want to refine this logic based on your routing needs)
-  React.useEffect(() => {
-    if (!isAuthenticated) {
-      setShowSignIn(true);
-    } else {
-      setShowSignIn(false);
-    }
-  }, [isAuthenticated]);
 
   return (
     <Router>
@@ -164,12 +115,6 @@ export default function App() {
               path="/signin"
               element={
                 !isAuthenticated ? <SignIn /> : <Navigate to="/" replace />
-              }
-            />
-            <Route
-              path="/signup"
-              element={
-                !isAuthenticated ? <SignUp /> : <Navigate to="/" replace />
               }
             />
 
@@ -342,20 +287,18 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Redirect unauthenticated users to signup instead of signin */}
+            {/* All unknown routes → signin */}
             <Route
               path="*"
               element={
                 !isAuthenticated ? (
-                  <Navigate to="/signup" replace />
+                  <Navigate to="/signin" replace />
                 ) : (
                   <NotFound />
                 )
               }
             />
           </Routes>
-          {/* SignIn Popup */}
-          <SignInModal open={showSignIn && window.location.pathname !== "/signin" && window.location.pathname !== "/signup"} onClose={() => setShowSignIn(false)} />
         </Suspense>
       </AdminTrackerProvider>
     </Router>

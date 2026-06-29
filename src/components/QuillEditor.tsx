@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import {
   Bold,
   Italic,
@@ -96,27 +97,27 @@ const QuillEditor = ({
     const selection = window.getSelection();
     if (selection.rangeCount > 0 && editorRef.current.contains(selection.anchorNode)) {
       const range = selection.getRangeAt(0);
-      
+
       // Get the current element containing the selection
       let currentElement = range.commonAncestorContainer;
       if (currentElement.nodeType === Node.TEXT_NODE) {
         currentElement = currentElement.parentElement;
       }
-      
+
       // Ensure we're within the editor
       while (currentElement && currentElement !== editorRef.current && !['H1', 'H2', 'H3', 'P', 'DIV'].includes(currentElement.tagName)) {
         currentElement = currentElement.parentElement;
       }
-      
+
       // Check if we're already in a heading or paragraph of the same level
       const isCurrentHeading = currentElement && (currentElement.tagName === `H${level}` || (level === 0 && currentElement.tagName === 'P')) && currentElement.parentElement === editorRef.current;
-      
+
       if (isCurrentHeading) {
         // Convert to paragraph if heading, or do nothing if already P
         const p = document.createElement('p');
         p.innerHTML = currentElement.innerHTML;
         currentElement.parentNode.replaceChild(p, currentElement);
-        
+
         // Update cursor position
         const newRange = document.createRange();
         newRange.selectNodeContents(p);
@@ -140,7 +141,7 @@ const QuillEditor = ({
         selection.removeAllRanges();
         selection.addRange(range);
       }
-      
+
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
       }
@@ -151,11 +152,11 @@ const QuillEditor = ({
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      
+
       // Try the standard way first
       const command = type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList';
       document.execCommand(command, false, null);
-      
+
       // If that doesn't work, create manually
       setTimeout(() => {
         if (editorRef.current) {
@@ -170,7 +171,7 @@ const QuillEditor = ({
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       const selectedText = range.toString() || 'Quote text here';
-      
+
       // Create blockquote element
       const blockquote = document.createElement('blockquote');
       blockquote.style.borderLeft = '4px solid #ccc';
@@ -178,17 +179,17 @@ const QuillEditor = ({
       blockquote.style.margin = '16px 0';
       blockquote.style.fontStyle = 'italic';
       blockquote.textContent = selectedText;
-      
+
       if (range.toString()) {
         range.deleteContents();
       }
       range.insertNode(blockquote);
       range.setStartAfter(blockquote);
       range.collapse(true);
-      
+
       selection.removeAllRanges();
       selection.addRange(range);
-      
+
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
       }
@@ -200,7 +201,7 @@ const QuillEditor = ({
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       const selectedText = range.toString() || 'Code goes here';
-      
+
       // Create code block element
       const pre = document.createElement('pre');
       const code = document.createElement('code');
@@ -210,20 +211,20 @@ const QuillEditor = ({
       pre.style.fontFamily = 'monospace';
       pre.style.overflow = 'auto';
       pre.style.margin = '16px 0';
-      
+
       code.textContent = selectedText;
       pre.appendChild(code);
-      
+
       if (range.toString()) {
         range.deleteContents();
       }
       range.insertNode(pre);
       range.setStartAfter(pre);
       range.collapse(true);
-      
+
       selection.removeAllRanges();
       selection.addRange(range);
-      
+
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
       }
@@ -234,7 +235,7 @@ const QuillEditor = ({
     const selection = window.getSelection();
     const selectedText = selection.toString() || 'Link text';
     const url = prompt("Enter URL:");
-    
+
     if (url && /^https?:\/\/[^\s]+$/.test(url)) {
       if (selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
@@ -243,15 +244,15 @@ const QuillEditor = ({
         link.textContent = selectedText;
         link.style.color = '#007bff';
         link.style.textDecoration = 'underline';
-        
+
         range.deleteContents();
         range.insertNode(link);
         range.setStartAfter(link);
         range.collapse(true);
-        
+
         selection.removeAllRanges();
         selection.addRange(range);
-        
+
         if (editorRef.current) {
           onChange(editorRef.current.innerHTML);
         }
@@ -273,14 +274,14 @@ const QuillEditor = ({
         img.style.height = 'auto';
         img.style.display = 'block';
         img.style.margin = '16px 0';
-        
+
         range.insertNode(img);
         range.setStartAfter(img);
         range.collapse(true);
-        
+
         selection.removeAllRanges();
         selection.addRange(range);
-        
+
         if (editorRef.current) {
           onChange(editorRef.current.innerHTML);
         }
@@ -387,9 +388,8 @@ const QuillEditor = ({
 
   return (
     <div
-      className={`relative ${
-        isFullscreen ? "fixed inset-0 z-50 bg-white " : ""
-      } ${className}`}
+      className={`relative ${isFullscreen ? "fixed inset-0 z-50 bg-white " : ""
+        } ${className}`}
     >
       <style>
         {`
@@ -514,13 +514,13 @@ const QuillEditor = ({
           <div
             className="p-6 prose max-w-none bg-gray-50 dark:bg-white/[0.03] overflow-y-auto"
             style={{ height: editorHeight }}
-            dangerouslySetInnerHTML={{ __html: value }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value) }}
           />
         ) : (
           <div
             ref={editorRef}
             className="p-6 outline-none prose max-w-none bg-white dark:bg-white/[0.03] dark:text-white/90 text-black dark:placeholder:text-white/60 placeholder:text-black/80 overflow-y-auto focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-            style={{ 
+            style={{
               height: editorHeight,
             }}
             suppressContentEditableWarning={true}

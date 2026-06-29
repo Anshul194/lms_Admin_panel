@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_BASE_URL || 'https://api.edrilla.com/';
@@ -11,15 +11,14 @@ const axiosInstance: AxiosInstance = axios.create({
   }
 });
 
-// Request interceptor
+// Request interceptor — attaches the JWT from localStorage to every request
 axiosInstance.interceptors.request.use(
   (config: import('axios').InternalAxiosRequestConfig): import('axios').InternalAxiosRequestConfig => {
-    const token = localStorage.getItem('accessToken');
-    
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
-      config.headers['x-access-token'] = token;
-      
+
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         config.headers['x-refresh-token'] = refreshToken;
@@ -39,12 +38,21 @@ axiosInstance.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response && error.response.status === 401) {
-      // Handle 401 Unauthorized errors
+      // Clear ALL auth data from localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      // You can add redirect logic here if needed
+      localStorage.removeItem('role');
+
+      // Fire a custom event so the Redux store can also clear its state.
+      // The AuthGuard/ProtectedRoute listens for this and dispatches clearCredentials.
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+
+      // Hard redirect to signin — no React state needed
+      if (window.location.pathname !== '/signin') {
+        window.location.replace('/signin');
+      }
     }
     return Promise.reject(error);
   }

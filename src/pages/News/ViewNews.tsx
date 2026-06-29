@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import DOMPurify from "dompurify";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
 import { fetchNewsById } from "../../store/slices/news";
@@ -39,7 +40,7 @@ const extractText = (val: any): string => {
     if (typeof val.content === "string") return val.content;
     if (Array.isArray(val.items)) {
       return val.items
-        .map((i) => extractText(i))
+        .map((i: any) => extractText(i))
         .filter(Boolean)
         .join(", ");
     }
@@ -132,8 +133,8 @@ const renderEditorJSBlocks = (blocks: any[]): string => {
           const imageAlt = block.data?.alt || imageCaption || "Image";
           if (!imageUrl) return "";
           // Handle both full URLs and relative paths
-          const finalImageUrl = imageUrl.startsWith("http://") || imageUrl.startsWith("https://") 
-            ? imageUrl 
+          const finalImageUrl = imageUrl.startsWith("http://") || imageUrl.startsWith("https://")
+            ? imageUrl
             : getImageUrl(imageUrl);
           return `
             <figure class="my-6">
@@ -150,8 +151,8 @@ const renderEditorJSBlocks = (blocks: any[]): string => {
         case "video":
           const videoUrl = block.data?.url || block.data?.file?.url || "";
           if (!videoUrl) return "";
-          const finalVideoUrl = videoUrl.startsWith("http://") || videoUrl.startsWith("https://") 
-            ? videoUrl 
+          const finalVideoUrl = videoUrl.startsWith("http://") || videoUrl.startsWith("https://")
+            ? videoUrl
             : getImageUrl(videoUrl);
           return `
             <div class="my-6 relative w-full" style="padding-bottom: 56.25%;">
@@ -168,8 +169,8 @@ const renderEditorJSBlocks = (blocks: any[]): string => {
         case "audio":
           const audioUrl = block.data?.url || block.data?.file?.url || "";
           if (!audioUrl) return "";
-          const finalAudioUrl = audioUrl.startsWith("http://") || audioUrl.startsWith("https://") 
-            ? audioUrl 
+          const finalAudioUrl = audioUrl.startsWith("http://") || audioUrl.startsWith("https://")
+            ? audioUrl
             : getImageUrl(audioUrl);
           return `
             <div class="my-6">
@@ -293,8 +294,8 @@ export default function ViewNews() {
   const categoryName = Array.isArray(news.categories) && news.categories.length > 0
     ? news.categories[0]
     : typeof news.categories === "string"
-    ? news.categories
-    : "";
+      ? news.categories
+      : "";
 
   return (
     <>
@@ -305,23 +306,23 @@ export default function ViewNews() {
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate("/news")}
+              <button
+                onClick={() => navigate("/news")}
                 className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
-          >
+              >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 <span className="font-medium">Back to News</span>
-          </button>
+              </button>
 
-          <div className="flex items-center gap-3">
-            <button
+              <div className="flex items-center gap-3">
+                <button
                   onClick={() => navigate(`/news/edit/${news._id}`)}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span className="hidden sm:inline">Edit News</span>
                   <span className="sm:hidden">Edit</span>
-            </button>
+                </button>
               </div>
             </div>
           </div>
@@ -332,7 +333,7 @@ export default function ViewNews() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main News Content - 2 columns */}
             <div className="lg:col-span-2 space-y-6">
-        {/* News Header */}
+              {/* News Header */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
                 {/* Cover Image */}
                 {news.imageUrl && (
@@ -350,21 +351,20 @@ export default function ViewNews() {
                         <span className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm shadow-lg backdrop-blur-sm">
                           <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                           BREAKING
-              </span>
-            )}
+                        </span>
+                      )}
                       {news.isPremium && (
                         <span className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold text-sm shadow-lg backdrop-blur-sm">
                           ⭐ Premium
-              </span>
-            )}
-            <span
-                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white shadow-lg backdrop-blur-sm ${
-                          news.status === "active"
-                            ? "bg-green-600"
-                            : news.status === "blocked"
+                        </span>
+                      )}
+                      <span
+                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white shadow-lg backdrop-blur-sm ${news.status === "active"
+                          ? "bg-green-600"
+                          : news.status === "blocked"
                             ? "bg-yellow-600"
                             : "bg-red-600"
-                        }`}
+                          }`}
                       >
                         {(news.status || "active").toUpperCase()}
                       </span>
@@ -379,13 +379,13 @@ export default function ViewNews() {
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-gray-900 dark:text-white shadow-md hover:shadow-lg transition-shadow bg-blue-100 dark:bg-blue-900/30">
                         <div className="w-2 h-2 rounded-full bg-blue-600"></div>
                         {categoryName}
-            </span>
-          </div>
+                      </span>
+                    </div>
                   )}
 
                   <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                     {news.title || "Untitled"}
-          </h1>
+                  </h1>
 
                   {news.summary && (
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6 mb-6 border-l-4 border-blue-500">
@@ -398,38 +398,38 @@ export default function ViewNews() {
                   {/* Meta Info */}
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-gray-600 dark:text-gray-400 pb-6 border-b border-gray-200 dark:border-gray-700">
                     {news.author && (
-              <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                           <User className="w-4 h-4 text-blue-600" />
-              </div>
+                        </div>
                         <span className="font-medium">
                           {(news.author as any)?.name || news.author || "Unknown"}
                         </span>
-              </div>
-            )}
+                      </div>
+                    )}
                     <span className="text-gray-300 hidden sm:inline">•</span>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
                       <span>
                         {news.publishedAt
                           ? new Date(news.publishedAt).toLocaleString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "-"}
                       </span>
-            </div>
+                    </div>
                     <span className="text-gray-300 hidden sm:inline">•</span>
-              <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4" />
                       <span className="font-semibold">
                         {news.stats?.views?.toLocaleString() || 0} views
                       </span>
-              </div>
-          </div>
+                    </div>
+                  </div>
 
                   {/* Tags */}
                   {news.tags && news.tags.length > 0 && (
@@ -438,21 +438,21 @@ export default function ViewNews() {
                         <Tag className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                           Tags
-                </span>
+                        </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {news.tags.map((tag, idx) => (
-                <span
-                  key={idx}
+                          <span
+                            key={idx}
                             className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
-                >
+                          >
                             #{extractText(tag)}
-                </span>
-              ))}
+                          </span>
+                        ))}
                       </div>
-            </div>
-          )}
-        </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* News Content */}
@@ -462,7 +462,7 @@ export default function ViewNews() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                     News Content
                   </h2>
-        </div>
+                </div>
 
                 <div className="prose prose-lg dark:prose-invert max-w-none overflow-wrap break-words">
                   <style>{`
@@ -488,8 +488,8 @@ export default function ViewNews() {
                     (() => {
                       const renderedContent = renderEditorJSContent(news.content);
                       return renderedContent ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: renderedContent }}
+                        <div
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderedContent) }}
                           className="news-content"
                         />
                       ) : (
@@ -507,20 +507,20 @@ export default function ViewNews() {
                       <p className="text-gray-500 dark:text-gray-400">
                         No content available
                       </p>
-          </div>
-        )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-        {/* Video */}
+              {/* Video */}
               {news.videoUrl && (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Video</h3>
                   <div className="relative w-full overflow-hidden rounded-xl shadow-lg" style={{ paddingBottom: '56.25%' }}>
-            <iframe
+                    <iframe
                       src={news.videoUrl}
                       className="absolute top-0 left-0 w-full h-full border-0"
-              allowFullScreen
+                      allowFullScreen
                       loading="lazy"
                     />
                   </div>
@@ -550,8 +550,8 @@ export default function ViewNews() {
                       </div>
                     )}
                   </div>
-          </div>
-        )}
+                </div>
+              )}
 
               {/* News Stats */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
@@ -598,7 +598,7 @@ export default function ViewNews() {
                         ? new Date(news.updatedAt).toLocaleString()
                         : "-"}
                     </span>
-        </div>
+                  </div>
 
                   {news.stats?.likes !== undefined && (
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-lg border border-red-100 dark:border-red-800">
@@ -610,12 +610,12 @@ export default function ViewNews() {
                       <span className="font-bold text-lg text-gray-900 dark:text-white">
                         {news.stats.likes || 0}
                       </span>
-          </div>
-        )}
+                    </div>
+                  )}
 
                   {news.stats?.shares !== undefined && (
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-100 dark:border-purple-800">
-              <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <Share2 className="w-4 h-4 text-purple-600" />
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           Shares
@@ -658,7 +658,7 @@ export default function ViewNews() {
                       </div>
                     )}
                   </div>
-              </div>
+                </div>
               )}
 
               {/* Language */}
@@ -670,7 +670,7 @@ export default function ViewNews() {
                   <p className="text-sm font-medium text-gray-900 dark:text-white uppercase">
                     {news.language}
                   </p>
-              </div>
+                </div>
               )}
             </div>
           </div>
